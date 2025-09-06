@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Defensoria Pública MS</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="container">
+    <!-- Barra de busca -->
+    <div class="search-bar">
+      <input 
+        type="text" 
+        id="searchInput" 
+        placeholder="Pesquise por unidade, órgão ou defensor..." 
+        onkeyup="searchUnit()" 
+      />
+    </div>
+
+    <!-- Filtros -->
+    <div class="filters">
+      <label>
+        <input type="radio" name="filter" value="todos" checked onchange="searchUnit()"> Todos
+      </label>
+      <label>
+        <input type="radio" name="filter" value="vagos" onchange="searchUnit()"> Órgãos vagos
+      </label>
+      <label>
+        <input type="radio" name="filter" value="afastados" onchange="searchUnit()"> Titulares afastados
+      </label>
+    </div>
+
+    <div id="unitList" class="unit-list">
+      <!-- Unidades aparecem aqui -->
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
