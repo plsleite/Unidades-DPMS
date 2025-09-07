@@ -14,6 +14,7 @@ function normalizeText(text) {
 let unidades = []; // Array vazio - será preenchido pela API
 let regionais = []; // Array vazio - será preenchido pela API
 let isLoading = false;
+let currentAdmin = null; // Dados do administrador logado
 
 /* =========================
    FUNÇÕES DE API
@@ -212,10 +213,175 @@ function searchUnit() {
 }
 
 /* =========================
+   FUNÇÕES DE AUTENTICAÇÃO
+========================= */
+
+// Função para fazer login
+async function login(username, password) {
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ username, password })
+    });
+
+    const data = await response.json();
+
+    if (data.success) {
+      // Salvar token no localStorage
+      localStorage.setItem('adminToken', data.token);
+      localStorage.setItem('adminData', JSON.stringify(data.admin));
+      
+      currentAdmin = data.admin;
+      updateAdminUI();
+      
+      console.log('✅ Login realizado com sucesso:', data.admin.nome);
+      return { success: true };
+    } else {
+      return { success: false, error: data.error };
+    }
+  } catch (error) {
+    console.error('❌ Erro no login:', error);
+    return { success: false, error: 'Erro de conexão' };
+  }
+}
+
+// Função para fazer logout
+async function logout() {
+  try {
+    const token = localStorage.getItem('adminToken');
+    if (token) {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+    }
+  } catch (error) {
+    console.error('Erro no logout:', error);
+  } finally {
+    // Limpar dados locais
+    localStorage.removeItem('adminToken');
+    localStorage.removeItem('adminData');
+    currentAdmin = null;
+    updateAdminUI();
+    console.log('✅ Logout realizado');
+  }
+}
+
+// Função para verificar se está logado
+function checkAuth() {
+  const token = localStorage.getItem('adminToken');
+  const adminData = localStorage.getItem('adminData');
+  
+  if (token && adminData) {
+    try {
+      currentAdmin = JSON.parse(adminData);
+      updateAdminUI();
+      return true;
+    } catch (error) {
+      console.error('Erro ao verificar autenticação:', error);
+      logout();
+      return false;
+    }
+  }
+  return false;
+}
+
+// Função para atualizar UI do admin
+function updateAdminUI() {
+  const adminBtn = document.getElementById('adminBtn');
+  
+  if (currentAdmin) {
+    adminBtn.innerHTML = `👤 ${currentAdmin.nome} (Sair)`;
+    adminBtn.onclick = logout;
+  } else {
+    adminBtn.innerHTML = '🔐 Área Administrativa';
+    adminBtn.onclick = toggleLoginModal;
+  }
+}
+
+// Função para abrir modal de login
+function toggleLoginModal() {
+  const modal = document.getElementById('loginModal');
+  modal.style.display = 'block';
+  document.getElementById('username').focus();
+}
+
+// Função para fechar modal de login
+function closeLoginModal() {
+  const modal = document.getElementById('loginModal');
+  modal.style.display = 'none';
+  document.getElementById('loginForm').reset();
+  hideLoginError();
+}
+
+// Função para mostrar erro de login
+function showLoginError(message) {
+  const errorDiv = document.getElementById('loginError');
+  errorDiv.textContent = message;
+  errorDiv.style.display = 'block';
+}
+
+// Função para esconder erro de login
+function hideLoginError() {
+  const errorDiv = document.getElementById('loginError');
+  errorDiv.style.display = 'none';
+}
+
+// Função para processar formulário de login
+async function handleLogin(event) {
+  event.preventDefault();
+  
+  const username = document.getElementById('username').value;
+  const password = document.getElementById('password').value;
+  const loginBtn = document.querySelector('.btn-login');
+  
+  // Desabilitar botão durante login
+  loginBtn.disabled = true;
+  loginBtn.textContent = 'Entrando...';
+  
+  try {
+    const result = await login(username, password);
+    
+    if (result.success) {
+      closeLoginModal();
+      // Aqui você pode redirecionar para a área administrativa
+      alert('Login realizado com sucesso! Área administrativa será implementada em breve.');
+    } else {
+      showLoginError(result.error || 'Erro no login');
+    }
+  } catch (error) {
+    showLoginError('Erro de conexão');
+  } finally {
+    // Reabilitar botão
+    loginBtn.disabled = false;
+    loginBtn.textContent = 'Entrar';
+  }
+}
+
+/* =========================
    INIT
 ========================= */
 window.onload = async () => {
   console.log('🚀 Iniciando aplicação...');
+  
+  // Verificar autenticação
+  checkAuth();
+  
+  // Configurar formulário de login
+  document.getElementById('loginForm').addEventListener('submit', handleLogin);
+  
+  // Fechar modal ao clicar fora dele
+  window.onclick = function(event) {
+    const modal = document.getElementById('loginModal');
+    if (event.target === modal) {
+      closeLoginModal();
+    }
+  };
   
   // Carregar dados da API
   await fetchData();

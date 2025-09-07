@@ -4,6 +4,7 @@ const path = require('path');
 const { testConnection } = require('./database');
 const config = require('./config');
 const apiRoutes = require('./routes/api');
+const authRoutes = require('./routes/auth');
 
 // Criar aplicação Express
 const app = express();
@@ -47,6 +48,9 @@ app.get('/api/test-db', async (req, res) => {
 
 // Usar rotas da API
 app.use('/api', apiRoutes);
+
+// Usar rotas de autenticação
+app.use('/api/auth', authRoutes);
 
 // Iniciar servidor
 const PORT = config.server.port;
