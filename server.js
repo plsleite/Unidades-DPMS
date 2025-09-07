@@ -3,6 +3,7 @@ const cors = require('cors');
 const path = require('path');
 const { testConnection } = require('./database');
 const config = require('./config');
+const apiRoutes = require('./routes/api');
 
 // Criar aplicação Express
 const app = express();
@@ -43,6 +44,9 @@ app.get('/api/test-db', async (req, res) => {
     });
   }
 });
+
+// Usar rotas da API
+app.use('/api', apiRoutes);
 
 // Iniciar servidor
 const PORT = config.server.port;
