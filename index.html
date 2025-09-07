@@ -7,13 +7,12 @@
   <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
+  <!-- Botão de admin no canto superior direito -->
+  <button id="adminBtn" class="admin-btn" onclick="toggleLoginModal()">
+    🔐 Área Administrativa
+  </button>
+
   <div class="container">
-    <!-- Botão de admin no canto superior direito -->
-    <div class="admin-header">
-      <button id="adminBtn" class="admin-btn" onclick="toggleLoginModal()">
-        🔐 Área Administrativa
-      </button>
-    </div>
 
     <!-- Barra de busca centralizada -->
     <div class="search-bar">
@@ -43,32 +42,258 @@
     </div>
   </div>
 
-  <!-- Modal de Login -->
-  <div id="loginModal" class="modal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h2>🔐 Área Administrativa</h2>
-        <span class="close" onclick="closeLoginModal()">&times;</span>
-      </div>
-      <div class="modal-body">
-        <form id="loginForm">
-          <div class="form-group">
-            <label for="username">Usuário:</label>
-            <input type="text" id="username" name="username" required>
-          </div>
-          <div class="form-group">
-            <label for="password">Senha:</label>
-            <input type="password" id="password" name="password" required>
-          </div>
-          <div class="form-actions">
-            <button type="button" onclick="closeLoginModal()" class="btn-cancel">Cancelar</button>
-            <button type="submit" class="btn-login">Entrar</button>
-          </div>
-        </form>
-        <div id="loginError" class="error-message" style="display: none;"></div>
+    <!-- Modal de Login -->
+    <div id="loginModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2>🔐 Área Administrativa</h2>
+          <span class="close" onclick="closeLoginModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="loginForm">
+            <div class="form-group">
+              <label for="username">Usuário:</label>
+              <input type="text" id="username" name="username" required>
+            </div>
+            <div class="form-group">
+              <label for="password">Senha:</label>
+              <input type="password" id="password" name="password" required>
+            </div>
+            <div class="form-actions">
+              <button type="button" onclick="closeLoginModal()" class="btn-cancel">Cancelar</button>
+              <button type="submit" class="btn-login">Entrar</button>
+            </div>
+          </form>
+          <div id="loginError" class="error-message" style="display: none;"></div>
+        </div>
       </div>
     </div>
-  </div>
+
+    <!-- Área Administrativa -->
+    <div id="adminArea" class="admin-area" style="display: none;">
+      <div class="admin-header">
+        <h2>🔧 Painel Administrativo</h2>
+        <div class="admin-actions">
+          <span id="adminWelcome" class="admin-welcome"></span>
+          <button onclick="logout()" class="btn-logout">Sair</button>
+        </div>
+      </div>
+
+      <div class="admin-tabs">
+        <button class="tab-btn active" onclick="showAdminTab('dashboard')">📊 Dashboard</button>
+        <button class="tab-btn" onclick="showAdminTab('unidades')">🏢 Unidades</button>
+        <button class="tab-btn" onclick="showAdminTab('orgaos')">👥 Órgãos</button>
+      </div>
+
+      <!-- Dashboard -->
+      <div id="adminDashboard" class="admin-tab-content active">
+        <div class="dashboard-stats">
+          <div class="stat-card">
+            <h3>Total de Unidades</h3>
+            <span id="totalUnidades" class="stat-number">-</span>
+          </div>
+          <div class="stat-card">
+            <h3>Total de Órgãos</h3>
+            <span id="totalOrgaos" class="stat-number">-</span>
+          </div>
+          <div class="stat-card">
+            <h3>Órgãos Vagos</h3>
+            <span id="orgaosVagos" class="stat-number">-</span>
+          </div>
+          <div class="stat-card">
+            <h3>Titulares Afastados</h3>
+            <span id="titularesAfastados" class="stat-number">-</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Gestão de Unidades -->
+      <div id="adminUnidades" class="admin-tab-content">
+        <div class="admin-section-header">
+          <h3>🏢 Gestão de Unidades</h3>
+          <button onclick="openUnidadeModal()" class="btn-add">+ Nova Unidade</button>
+        </div>
+        <div id="unidadesList" class="admin-list">
+          <!-- Lista de unidades será carregada aqui -->
+        </div>
+      </div>
+
+      <!-- Gestão de Órgãos -->
+      <div id="adminOrgaos" class="admin-tab-content">
+        <div class="admin-section-header">
+          <h3>👥 Gestão de Órgãos</h3>
+          <button onclick="openOrgaoModal()" class="btn-add">+ Novo Órgão</button>
+        </div>
+        <div id="orgaosList" class="admin-list">
+          <!-- Lista de órgãos será carregada aqui -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Unidade -->
+    <div id="unidadeModal" class="modal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2 id="unidadeModalTitle">Nova Unidade</h2>
+          <span class="close" onclick="closeUnidadeModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="unidadeForm">
+            <input type="hidden" id="unidadeId">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="unidadeNome">Nome da Unidade *</label>
+                <input type="text" id="unidadeNome" required>
+              </div>
+              <div class="form-group">
+                <label for="unidadeRegional">Regional *</label>
+                <select id="unidadeRegional" required>
+                  <option value="">Selecione uma regional</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="unidadeEndereco">Endereço *</label>
+                <input type="text" id="unidadeEndereco" required>
+              </div>
+              <div class="form-group">
+                <label for="unidadeTelefone">Telefone *</label>
+                <input type="text" id="unidadeTelefone" required>
+              </div>
+            </div>
+            
+            <div class="form-section">
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="unidadeTemCoordenador">
+                  <span class="checkmark"></span>
+                  Esta unidade possui coordenador
+                </label>
+              </div>
+              <div id="coordenadorFields" class="conditional-fields" style="display: none;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="unidadeCoordenador">Nome do Coordenador *</label>
+                    <input type="text" id="unidadeCoordenador">
+                  </div>
+                  <div class="form-group">
+                    <label for="unidadeEmailCoordenador">Email do Coordenador *</label>
+                    <input type="email" id="unidadeEmailCoordenador">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-section">
+              <div class="checkbox-group">
+                <label class="checkbox-label">
+                  <input type="checkbox" id="unidadeTemSupervisor">
+                  <span class="checkmark"></span>
+                  Esta unidade possui supervisor
+                </label>
+              </div>
+              <div id="supervisorFields" class="conditional-fields" style="display: none;">
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="unidadeSupervisor">Nome do Supervisor *</label>
+                    <input type="text" id="unidadeSupervisor">
+                  </div>
+                  <div class="form-group">
+                    <label for="unidadeEmailSupervisor">Email do Supervisor *</label>
+                    <input type="email" id="unidadeEmailSupervisor">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="button" onclick="closeUnidadeModal()" class="btn-cancel">Cancelar</button>
+              <button type="submit" class="btn-save">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    <!-- Modal de Órgão -->
+    <div id="orgaoModal" class="modal">
+      <div class="modal-content large">
+        <div class="modal-header">
+          <h2 id="orgaoModalTitle">Novo Órgão</h2>
+          <span class="close" onclick="closeOrgaoModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="orgaoForm">
+            <input type="hidden" id="orgaoId">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="orgaoNome">Nome do Órgão *</label>
+                <input type="text" id="orgaoNome" required>
+              </div>
+              <div class="form-group">
+                <label for="orgaoUnidade">Unidade *</label>
+                <select id="orgaoUnidade" required>
+                  <option value="">Selecione uma unidade</option>
+                </select>
+              </div>
+            </div>
+            
+            <div class="form-group">
+              <label class="checkbox-label">
+                <input type="checkbox" id="orgaoVaga">
+                <span class="checkmark"></span>
+                Órgão vago
+              </label>
+            </div>
+            
+            <div id="titularFields" class="conditional-fields">
+              <div class="form-section">
+                <h4>Titular</h4>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="orgaoTitularNome">Nome do Titular *</label>
+                    <input type="text" id="orgaoTitularNome">
+                  </div>
+                  <div class="form-group">
+                    <label for="orgaoTitularEmail">Email do Titular *</label>
+                    <input type="email" id="orgaoTitularEmail">
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label class="checkbox-label">
+                    <input type="checkbox" id="orgaoTitularAfastado">
+                    <span class="checkmark"></span>
+                    Titular afastado
+                  </label>
+                </div>
+              </div>
+            </div>
+            
+            <div id="substitutoFields" class="conditional-fields" style="display: none;">
+              <div class="form-section">
+                <h4>Substituto</h4>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="orgaoSubstitutoNome">Nome do Substituto *</label>
+                    <input type="text" id="orgaoSubstitutoNome">
+                  </div>
+                  <div class="form-group">
+                    <label for="orgaoSubstitutoEmail">Email do Substituto *</label>
+                    <input type="email" id="orgaoSubstitutoEmail">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="form-actions">
+              <button type="button" onclick="closeOrgaoModal()" class="btn-cancel">Cancelar</button>
+              <button type="submit" class="btn-save">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
   <script src="script.js"></script>
 </body>

@@ -92,6 +92,156 @@ router.get('/unidades/:id', async (req, res) => {
   }
 });
 
+// POST /api/unidades - Criar nova unidade
+router.post('/unidades', async (req, res) => {
+  try {
+    const { 
+      nome, 
+      endereco, 
+      telefone, 
+      regional_id, 
+      coordenador, 
+      email_coordenador, 
+      supervisor, 
+      email_supervisor 
+    } = req.body;
+
+    // Validações básicas
+    if (!nome || !endereco) {
+      return res.status(400).json({ error: 'Nome e endereço são obrigatórios' });
+    }
+
+    const sql = `
+      INSERT INTO unidades (
+        nome, endereco, telefone, regional_id, 
+        coordenador, email_coordenador, supervisor, email_supervisor
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `;
+
+    const params = [
+      nome, 
+      endereco, 
+      telefone || null, 
+      regional_id || null, 
+      coordenador || null, 
+      email_coordenador || null, 
+      supervisor || null, 
+      email_supervisor || null
+    ];
+
+    const result = await query(sql, params);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Unidade criada com sucesso',
+      unidade: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao criar unidade:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/unidades/:id - Atualizar unidade
+router.put('/unidades/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      nome, 
+      endereco, 
+      telefone, 
+      regional_id, 
+      coordenador, 
+      email_coordenador, 
+      supervisor, 
+      email_supervisor 
+    } = req.body;
+
+    // Validações básicas
+    if (!nome || !endereco) {
+      return res.status(400).json({ error: 'Nome e endereço são obrigatórios' });
+    }
+
+    const sql = `
+      UPDATE unidades SET 
+        nome = $1, 
+        endereco = $2, 
+        telefone = $3, 
+        regional_id = $4, 
+        coordenador = $5, 
+        email_coordenador = $6, 
+        supervisor = $7, 
+        email_supervisor = $8
+      WHERE id = $9
+      RETURNING *
+    `;
+
+    const params = [
+      nome, 
+      endereco, 
+      telefone || null, 
+      regional_id || null, 
+      coordenador || null, 
+      email_coordenador || null, 
+      supervisor || null, 
+      email_supervisor || null,
+      id
+    ];
+
+    const result = await query(sql, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Unidade não encontrada' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Unidade atualizada com sucesso',
+      unidade: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao atualizar unidade:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// DELETE /api/unidades/:id - Excluir unidade
+router.delete('/unidades/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Verificar se a unidade tem órgãos
+    const orgaosResult = await query('SELECT COUNT(*) as count FROM orgaos WHERE unidade_id = $1', [id]);
+    const orgaosCount = parseInt(orgaosResult.rows[0].count);
+
+    if (orgaosCount > 0) {
+      return res.status(400).json({ 
+        error: 'Não é possível excluir unidade que possui órgãos vinculados',
+        orgaosCount 
+      });
+    }
+
+    const sql = 'DELETE FROM unidades WHERE id = $1 RETURNING *';
+    const result = await query(sql, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Unidade não encontrada' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Unidade excluída com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('Erro ao excluir unidade:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // =========================
 // ENDPOINTS DE ÓRGÃOS
 // =========================
@@ -160,6 +310,173 @@ router.get('/orgaos', async (req, res) => {
     
   } catch (error) {
     console.error('Erro ao buscar órgãos:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/orgaos/:id - Buscar órgão específico
+router.get('/orgaos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const sql = `
+      SELECT 
+        o.*,
+        u.nome as unidade_nome
+      FROM orgaos o
+      LEFT JOIN unidades u ON o.unidade_id = u.id
+      WHERE o.id = $1
+    `;
+    
+    const result = await query(sql, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Órgão não encontrado' });
+    }
+    
+    res.json(result.rows[0]);
+    
+  } catch (error) {
+    console.error('Erro ao buscar órgão:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/orgaos - Criar novo órgão
+router.post('/orgaos', async (req, res) => {
+  try {
+    const { 
+      nome, 
+      unidade_id, 
+      titular_nome, 
+      titular_email, 
+      titular_afastado, 
+      vaga, 
+      substituto_nome, 
+      substituto_email 
+    } = req.body;
+
+    // Validações básicas
+    if (!nome || !unidade_id) {
+      return res.status(400).json({ error: 'Nome e unidade são obrigatórios' });
+    }
+
+    const sql = `
+      INSERT INTO orgaos (
+        nome, unidade_id, titular_nome, titular_email, 
+        titular_afastado, vaga, substituto_nome, substituto_email
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+      RETURNING *
+    `;
+
+    const params = [
+      nome, 
+      unidade_id, 
+      titular_nome || null, 
+      titular_email || null, 
+      titular_afastado || false, 
+      vaga || false, 
+      substituto_nome || null, 
+      substituto_email || null
+    ];
+
+    const result = await query(sql, params);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Órgão criado com sucesso',
+      orgao: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao criar órgão:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/orgaos/:id - Atualizar órgão
+router.put('/orgaos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      nome, 
+      unidade_id, 
+      titular_nome, 
+      titular_email, 
+      titular_afastado, 
+      vaga, 
+      substituto_nome, 
+      substituto_email 
+    } = req.body;
+
+    // Validações básicas
+    if (!nome || !unidade_id) {
+      return res.status(400).json({ error: 'Nome e unidade são obrigatórios' });
+    }
+
+    const sql = `
+      UPDATE orgaos SET 
+        nome = $1, 
+        unidade_id = $2, 
+        titular_nome = $3, 
+        titular_email = $4, 
+        titular_afastado = $5, 
+        vaga = $6, 
+        substituto_nome = $7, 
+        substituto_email = $8
+      WHERE id = $9
+      RETURNING *
+    `;
+
+    const params = [
+      nome, 
+      unidade_id, 
+      titular_nome || null, 
+      titular_email || null, 
+      titular_afastado || false, 
+      vaga || false, 
+      substituto_nome || null, 
+      substituto_email || null,
+      id
+    ];
+
+    const result = await query(sql, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Órgão não encontrado' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Órgão atualizado com sucesso',
+      orgao: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao atualizar órgão:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// DELETE /api/orgaos/:id - Excluir órgão
+router.delete('/orgaos/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const sql = 'DELETE FROM orgaos WHERE id = $1 RETURNING *';
+    const result = await query(sql, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Órgão não encontrado' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Órgão excluído com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('Erro ao excluir órgão:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

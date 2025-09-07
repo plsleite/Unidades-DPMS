@@ -11,6 +11,7 @@ function normalizeText(text) {
 /* =========================
    VARIÁVEIS GLOBAIS
 ========================= */
+const API_BASE_URL = 'http://localhost:3000/api';
 let unidades = []; // Array vazio - será preenchido pela API
 let regionais = []; // Array vazio - será preenchido pela API
 let isLoading = false;
@@ -219,7 +220,7 @@ function searchUnit() {
 // Função para fazer login
 async function login(username, password) {
   try {
-    const response = await fetch('/api/auth/login', {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -230,15 +231,12 @@ async function login(username, password) {
     const data = await response.json();
 
     if (data.success) {
-      // Salvar token no localStorage
-      localStorage.setItem('adminToken', data.token);
-      localStorage.setItem('adminData', JSON.stringify(data.admin));
-      
-      currentAdmin = data.admin;
-      updateAdminUI();
-      
-      console.log('✅ Login realizado com sucesso:', data.admin.nome);
-      return { success: true };
+      console.log('✅ Login realizado com sucesso:', data.admin);
+      return { 
+        success: true, 
+        admin: data.admin, 
+        token: data.token 
+      };
     } else {
       return { success: false, error: data.error };
     }
@@ -253,7 +251,7 @@ async function logout() {
   try {
     const token = localStorage.getItem('adminToken');
     if (token) {
-      await fetch('/api/auth/logout', {
+      await fetch(`${API_BASE_URL}/auth/logout`, {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`
@@ -265,44 +263,61 @@ async function logout() {
   } finally {
     // Limpar dados locais
     localStorage.removeItem('adminToken');
-    localStorage.removeItem('adminData');
     currentAdmin = null;
     updateAdminUI();
+    
+    // Recarregar dados da área pública após logout
+    fetchData().then(() => {
+      displayUnits();
+    }).catch(error => {
+      console.error('Erro ao recarregar dados:', error);
+    });
+    
     console.log('✅ Logout realizado');
   }
 }
 
 // Função para verificar se está logado
-function checkAuth() {
+async function checkAuth() {
   const token = localStorage.getItem('adminToken');
-  const adminData = localStorage.getItem('adminData');
+  console.log('🔍 Verificando autenticação, token:', token ? 'existe' : 'não existe');
   
-  if (token && adminData) {
+  if (token) {
     try {
-      currentAdmin = JSON.parse(adminData);
-      updateAdminUI();
-      return true;
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      console.log('🔍 Resposta da verificação:', response.status);
+      
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Token válido, admin:', result.admin);
+        currentAdmin = result.admin;
+        updateAdminUI();
+        return true;
+      } else {
+        console.log('❌ Token inválido, removendo do localStorage');
+        // Token inválido, remover do localStorage
+        localStorage.removeItem('adminToken');
+        currentAdmin = null;
+        updateAdminUI();
+        return false;
+      }
     } catch (error) {
-      console.error('Erro ao verificar autenticação:', error);
-      logout();
+      console.error('❌ Erro ao verificar autenticação:', error);
+      localStorage.removeItem('adminToken');
+      currentAdmin = null;
+      updateAdminUI();
       return false;
     }
   }
+  console.log('❌ Nenhum token encontrado');
   return false;
 }
 
-// Função para atualizar UI do admin
-function updateAdminUI() {
-  const adminBtn = document.getElementById('adminBtn');
-  
-  if (currentAdmin) {
-    adminBtn.innerHTML = `👤 ${currentAdmin.nome} (Sair)`;
-    adminBtn.onclick = logout;
-  } else {
-    adminBtn.innerHTML = '🔐 Área Administrativa';
-    adminBtn.onclick = toggleLoginModal;
-  }
-}
 
 // Função para abrir modal de login
 function toggleLoginModal() {
@@ -348,10 +363,14 @@ async function handleLogin(event) {
     const result = await login(username, password);
     
     if (result.success) {
+      console.log('✅ Login bem-sucedido, result:', result);
+      currentAdmin = result.admin;
+      localStorage.setItem('adminToken', result.token);
       closeLoginModal();
-      // Aqui você pode redirecionar para a área administrativa
-      alert('Login realizado com sucesso! Área administrativa será implementada em breve.');
+      console.log('🔄 Chamando updateAdminUI...');
+      updateAdminUI();
     } else {
+      console.log('❌ Login falhou:', result.error);
       showLoginError(result.error || 'Erro no login');
     }
   } catch (error) {
@@ -364,30 +383,675 @@ async function handleLogin(event) {
 }
 
 /* =========================
+   ÁREA ADMINISTRATIVA
+========================= */
+
+// Função para atualizar a UI do admin
+function updateAdminUI() {
+  console.log('🔄 updateAdminUI chamada, currentAdmin:', currentAdmin);
+  
+  const adminBtn = document.getElementById('adminBtn');
+  const adminArea = document.getElementById('adminArea');
+  const container = document.querySelector('.container');
+  const adminWelcome = document.getElementById('adminWelcome');
+  
+  console.log('🔍 Elementos encontrados:', {
+    adminBtn: !!adminBtn,
+    adminArea: !!adminArea,
+    container: !!container,
+    adminWelcome: !!adminWelcome
+  });
+  
+  if (currentAdmin) {
+    console.log('✅ Admin logado, mostrando área administrativa');
+    console.log('🔍 currentAdmin.username:', currentAdmin.username);
+    if (adminBtn) adminBtn.textContent = `👤 ${currentAdmin.username}`;
+    if (adminBtn) adminBtn.onclick = logout;
+    if (adminArea) {
+      console.log('🔍 Mostrando adminArea');
+      adminArea.style.display = 'block';
+    }
+    if (container) {
+      console.log('🔍 Escondendo container');
+      container.style.display = 'none';
+    }
+    if (adminWelcome) adminWelcome.textContent = `Bem-vindo, ${currentAdmin.username}!`;
+    
+    // Carregar dados administrativos
+    loadAdminData();
+  } else {
+    console.log('❌ Nenhum admin logado, mostrando área pública');
+    if (adminBtn) adminBtn.textContent = '🔐 Área Administrativa';
+    if (adminBtn) adminBtn.onclick = toggleLoginModal;
+    if (adminArea) adminArea.style.display = 'none';
+    if (container) container.style.display = 'block';
+  }
+}
+
+// Carregar dados para o dashboard administrativo
+async function loadAdminData() {
+  try {
+    // Carregar estatísticas do dashboard
+    await loadDashboardStats();
+    
+    // Carregar listas de unidades e órgãos
+    await loadUnidadesList();
+    await loadOrgaosList();
+  } catch (error) {
+    console.error('Erro ao carregar dados administrativos:', error);
+  }
+}
+
+// Carregar estatísticas do dashboard
+async function loadDashboardStats() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/unidades-completas`);
+    const unidadesData = await response.json();
+    
+    const totalUnidades = unidadesData.length;
+    let totalOrgaos = 0;
+    let orgaosVagos = 0;
+    let titularesAfastados = 0;
+    
+    unidadesData.forEach(unidade => {
+      totalOrgaos += unidade.orgaos.length;
+      unidade.orgaos.forEach(orgao => {
+        if (orgao.vaga) orgaosVagos++;
+        if (orgao.titular_afastado) titularesAfastados++;
+      });
+    });
+    
+    document.getElementById('totalUnidades').textContent = totalUnidades;
+    document.getElementById('totalOrgaos').textContent = totalOrgaos;
+    document.getElementById('orgaosVagos').textContent = orgaosVagos;
+    document.getElementById('titularesAfastados').textContent = titularesAfastados;
+  } catch (error) {
+    console.error('Erro ao carregar estatísticas:', error);
+  }
+}
+
+// Carregar lista de unidades para administração
+async function loadUnidadesList() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/unidades-completas`);
+    const unidadesData = await response.json();
+    
+    const unidadesList = document.getElementById('unidadesList');
+    unidadesList.innerHTML = '';
+    
+    unidadesData.forEach(unidade => {
+      const unidadeDiv = document.createElement('div');
+      unidadeDiv.className = 'admin-item';
+      unidadeDiv.innerHTML = `
+        <div class="admin-item-info">
+          <h4>${unidade.nome}</h4>
+          <p>${unidade.endereco} • ${unidade.regional_nome || 'Sem regional'}</p>
+          <p>Coordenador: ${unidade.coordenador || 'Não informado'}</p>
+        </div>
+        <div class="admin-item-actions">
+          <button class="btn-edit" onclick="editUnidade(${unidade.id})">Editar</button>
+          <button class="btn-delete" onclick="deleteUnidade(${unidade.id})">Excluir</button>
+        </div>
+      `;
+      unidadesList.appendChild(unidadeDiv);
+    });
+  } catch (error) {
+    console.error('Erro ao carregar unidades:', error);
+  }
+}
+
+// Carregar lista de órgãos para administração
+async function loadOrgaosList() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orgaos`);
+    const orgaosData = await response.json();
+    
+    const orgaosList = document.getElementById('orgaosList');
+    orgaosList.innerHTML = '';
+    
+    orgaosData.forEach(orgao => {
+      const orgaoDiv = document.createElement('div');
+      orgaoDiv.className = 'admin-item';
+      orgaoDiv.innerHTML = `
+        <div class="admin-item-info">
+          <h4>${orgao.nome}</h4>
+          <p>Unidade: ${orgao.unidade_nome || 'Não informada'}</p>
+          <p>Titular: ${orgao.titular_nome || 'Não informado'}</p>
+          <p>Status: ${orgao.vaga ? 'Vago' : (orgao.titular_afastado ? 'Titular afastado' : 'Ativo')}</p>
+        </div>
+        <div class="admin-item-actions">
+          <button class="btn-edit" onclick="editOrgao(${orgao.id})">Editar</button>
+          <button class="btn-delete" onclick="deleteOrgao(${orgao.id})">Excluir</button>
+        </div>
+      `;
+      orgaosList.appendChild(orgaoDiv);
+    });
+  } catch (error) {
+    console.error('Erro ao carregar órgãos:', error);
+  }
+}
+
+// Funções de navegação entre abas
+function showAdminTab(tabName) {
+  // Remover classe active de todas as abas e conteúdos
+  document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+  document.querySelectorAll('.admin-tab-content').forEach(content => content.classList.remove('active'));
+  
+  // Ativar aba e conteúdo selecionados
+  event.target.classList.add('active');
+  document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+}
+
+// Funções de modal de unidade
+function openUnidadeModal(unidadeId = null) {
+  const modal = document.getElementById('unidadeModal');
+  const title = document.getElementById('unidadeModalTitle');
+  const form = document.getElementById('unidadeForm');
+  
+  if (unidadeId) {
+    title.textContent = 'Editar Unidade';
+    // Carregar dados da unidade para edição
+    loadUnidadeData(unidadeId);
+  } else {
+    title.textContent = 'Nova Unidade';
+    form.reset();
+  }
+  
+  modal.style.display = 'block';
+  loadRegionaisForSelect();
+}
+
+function closeUnidadeModal() {
+  document.getElementById('unidadeModal').style.display = 'none';
+}
+
+function loadRegionaisForSelect() {
+  // Carregar regionais para o select
+  fetch(`${API_BASE_URL}/regionais`)
+    .then(response => response.json())
+    .then(regionais => {
+      const select = document.getElementById('unidadeRegional');
+      select.innerHTML = '<option value="">Selecione uma regional</option>';
+      regionais.forEach(regional => {
+        const option = document.createElement('option');
+        option.value = regional.id;
+        option.textContent = regional.nome;
+        select.appendChild(option);
+      });
+    });
+}
+
+async function loadUnidadeData(unidadeId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/unidades/${unidadeId}`);
+    const unidade = await response.json();
+    
+    if (response.ok) {
+      // Preencher formulário com dados da unidade
+      document.getElementById('unidadeId').value = unidade.id;
+      document.getElementById('unidadeNome').value = unidade.nome;
+      document.getElementById('unidadeEndereco').value = unidade.endereco;
+      document.getElementById('unidadeTelefone').value = unidade.telefone || '';
+      document.getElementById('unidadeRegional').value = unidade.regional_id || '';
+      
+      // Coordenador
+      const temCoordenador = !!(unidade.coordenador && unidade.email_coordenador);
+      document.getElementById('unidadeTemCoordenador').checked = temCoordenador;
+      if (temCoordenador) {
+        document.getElementById('coordenadorFields').style.display = 'block';
+        document.getElementById('unidadeCoordenador').value = unidade.coordenador || '';
+        document.getElementById('unidadeEmailCoordenador').value = unidade.email_coordenador || '';
+        document.getElementById('unidadeCoordenador').required = true;
+        document.getElementById('unidadeEmailCoordenador').required = true;
+      } else {
+        document.getElementById('coordenadorFields').style.display = 'none';
+        document.getElementById('unidadeCoordenador').value = '';
+        document.getElementById('unidadeEmailCoordenador').value = '';
+        document.getElementById('unidadeCoordenador').required = false;
+        document.getElementById('unidadeEmailCoordenador').required = false;
+      }
+      
+      // Supervisor
+      const temSupervisor = !!(unidade.supervisor && unidade.email_supervisor);
+      document.getElementById('unidadeTemSupervisor').checked = temSupervisor;
+      if (temSupervisor) {
+        document.getElementById('supervisorFields').style.display = 'block';
+        document.getElementById('unidadeSupervisor').value = unidade.supervisor || '';
+        document.getElementById('unidadeEmailSupervisor').value = unidade.email_supervisor || '';
+        document.getElementById('unidadeSupervisor').required = true;
+        document.getElementById('unidadeEmailSupervisor').required = true;
+      } else {
+        document.getElementById('supervisorFields').style.display = 'none';
+        document.getElementById('unidadeSupervisor').value = '';
+        document.getElementById('unidadeEmailSupervisor').value = '';
+        document.getElementById('unidadeSupervisor').required = false;
+        document.getElementById('unidadeEmailSupervisor').required = false;
+      }
+    } else {
+      console.error('Erro ao carregar unidade:', unidade.error);
+      alert('Erro ao carregar dados da unidade');
+    }
+  } catch (error) {
+    console.error('Erro ao carregar unidade:', error);
+    alert('Erro ao carregar dados da unidade');
+  }
+}
+
+function editUnidade(unidadeId) {
+  openUnidadeModal(unidadeId);
+}
+
+async function deleteUnidade(unidadeId) {
+  if (confirm('Tem certeza que deseja excluir esta unidade?')) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/unidades/${unidadeId}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert('Unidade excluída com sucesso!');
+        loadUnidadesList(); // Recarregar lista
+      } else {
+        alert(`Erro ao excluir unidade: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir unidade:', error);
+      alert('Erro ao excluir unidade');
+    }
+  }
+}
+
+// Função para processar formulário de unidade
+async function handleUnidadeSubmit(event) {
+  event.preventDefault();
+  
+  const unidadeId = document.getElementById('unidadeId').value;
+  const temCoordenador = document.getElementById('unidadeTemCoordenador').checked;
+  const temSupervisor = document.getElementById('unidadeTemSupervisor').checked;
+  
+  const formData = {
+    nome: document.getElementById('unidadeNome').value,
+    endereco: document.getElementById('unidadeEndereco').value,
+    telefone: document.getElementById('unidadeTelefone').value,
+    regional_id: document.getElementById('unidadeRegional').value || null,
+    coordenador: temCoordenador ? document.getElementById('unidadeCoordenador').value : null,
+    email_coordenador: temCoordenador ? document.getElementById('unidadeEmailCoordenador').value : null,
+    supervisor: temSupervisor ? document.getElementById('unidadeSupervisor').value : null,
+    email_supervisor: temSupervisor ? document.getElementById('unidadeEmailSupervisor').value : null
+  };
+  
+  // Validações
+  if (!formData.nome || !formData.endereco || !formData.telefone || !formData.regional_id) {
+    alert('Nome, endereço, telefone e regional são obrigatórios');
+    return;
+  }
+  
+  if (temCoordenador && (!formData.coordenador || !formData.email_coordenador)) {
+    alert('Nome e email do coordenador são obrigatórios quando marcado');
+    return;
+  }
+  
+  if (temSupervisor && (!formData.supervisor || !formData.email_supervisor)) {
+    alert('Nome e email do supervisor são obrigatórios quando marcado');
+    return;
+  }
+  
+  try {
+    const url = unidadeId ? `${API_BASE_URL}/unidades/${unidadeId}` : `${API_BASE_URL}/unidades`;
+    const method = unidadeId ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      alert(result.message);
+      closeUnidadeModal();
+      loadUnidadesList(); // Recarregar lista
+      loadAdminData(); // Recarregar dashboard
+    } else {
+      alert(`Erro: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Erro ao salvar unidade:', error);
+    alert('Erro ao salvar unidade');
+  }
+}
+
+// Funções de modal de órgão
+function openOrgaoModal(orgaoId = null) {
+  const modal = document.getElementById('orgaoModal');
+  const title = document.getElementById('orgaoModalTitle');
+  const form = document.getElementById('orgaoForm');
+  
+  if (orgaoId) {
+    title.textContent = 'Editar Órgão';
+    // Carregar dados do órgão para edição
+    loadOrgaoData(orgaoId);
+  } else {
+    title.textContent = 'Novo Órgão';
+    form.reset();
+  }
+  
+  modal.style.display = 'block';
+  loadUnidadesForSelect();
+}
+
+function closeOrgaoModal() {
+  document.getElementById('orgaoModal').style.display = 'none';
+}
+
+function loadUnidadesForSelect() {
+  // Carregar unidades para o select
+  fetch(`${API_BASE_URL}/unidades`)
+    .then(response => response.json())
+    .then(unidades => {
+      const select = document.getElementById('orgaoUnidade');
+      select.innerHTML = '<option value="">Selecione uma unidade</option>';
+      unidades.forEach(unidade => {
+        const option = document.createElement('option');
+        option.value = unidade.id;
+        option.textContent = unidade.nome;
+        select.appendChild(option);
+      });
+    });
+}
+
+async function loadOrgaoData(orgaoId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/orgaos/${orgaoId}`);
+    const orgao = await response.json();
+    
+    if (response.ok) {
+      // Preencher formulário com dados do órgão
+      document.getElementById('orgaoId').value = orgao.id;
+      document.getElementById('orgaoNome').value = orgao.nome;
+      document.getElementById('orgaoUnidade').value = orgao.unidade_id;
+      
+      // Órgão vago
+      const isVaga = orgao.vaga || false;
+      document.getElementById('orgaoVaga').checked = isVaga;
+      
+      if (isVaga) {
+        document.getElementById('titularFields').style.display = 'none';
+        document.getElementById('substitutoFields').style.display = 'block';
+        document.getElementById('orgaoTitularNome').required = false;
+        document.getElementById('orgaoTitularEmail').required = false;
+        document.getElementById('orgaoSubstitutoNome').required = true;
+        document.getElementById('orgaoSubstitutoEmail').required = true;
+        document.getElementById('orgaoTitularNome').value = '';
+        document.getElementById('orgaoTitularEmail').value = '';
+      } else {
+        document.getElementById('titularFields').style.display = 'block';
+        document.getElementById('orgaoTitularNome').required = true;
+        document.getElementById('orgaoTitularEmail').required = true;
+      }
+      
+      // Titular
+      document.getElementById('orgaoTitularNome').value = orgao.titular_nome || '';
+      document.getElementById('orgaoTitularEmail').value = orgao.titular_email || '';
+      document.getElementById('orgaoTitularAfastado').checked = orgao.titular_afastado || false;
+      
+      // Substituto
+      const isTitularAfastado = orgao.titular_afastado || false;
+      if (isVaga || isTitularAfastado) {
+        document.getElementById('substitutoFields').style.display = 'block';
+        document.getElementById('orgaoSubstitutoNome').required = true;
+        document.getElementById('orgaoSubstitutoEmail').required = true;
+      } else {
+        document.getElementById('substitutoFields').style.display = 'none';
+        document.getElementById('orgaoSubstitutoNome').required = false;
+        document.getElementById('orgaoSubstitutoEmail').required = false;
+      }
+      
+      document.getElementById('orgaoSubstitutoNome').value = orgao.substituto_nome || '';
+      document.getElementById('orgaoSubstitutoEmail').value = orgao.substituto_email || '';
+    } else {
+      console.error('Erro ao carregar órgão:', orgao.error);
+      alert('Erro ao carregar dados do órgão');
+    }
+  } catch (error) {
+    console.error('Erro ao carregar órgão:', error);
+    alert('Erro ao carregar dados do órgão');
+  }
+}
+
+function editOrgao(orgaoId) {
+  openOrgaoModal(orgaoId);
+}
+
+async function deleteOrgao(orgaoId) {
+  if (confirm('Tem certeza que deseja excluir este órgão?')) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/orgaos/${orgaoId}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert('Órgão excluído com sucesso!');
+        loadOrgaosList(); // Recarregar lista
+      } else {
+        alert(`Erro ao excluir órgão: ${result.error}`);
+      }
+    } catch (error) {
+      console.error('Erro ao excluir órgão:', error);
+      alert('Erro ao excluir órgão');
+    }
+  }
+}
+
+// Função para processar formulário de órgão
+async function handleOrgaoSubmit(event) {
+  event.preventDefault();
+  
+  const orgaoId = document.getElementById('orgaoId').value;
+  const isVaga = document.getElementById('orgaoVaga').checked;
+  const isTitularAfastado = document.getElementById('orgaoTitularAfastado').checked;
+  
+  const formData = {
+    nome: document.getElementById('orgaoNome').value,
+    unidade_id: document.getElementById('orgaoUnidade').value,
+    titular_nome: isVaga ? null : document.getElementById('orgaoTitularNome').value,
+    titular_email: isVaga ? null : document.getElementById('orgaoTitularEmail').value,
+    titular_afastado: isTitularAfastado,
+    vaga: isVaga,
+    substituto_nome: (isVaga || isTitularAfastado) ? document.getElementById('orgaoSubstitutoNome').value : null,
+    substituto_email: (isVaga || isTitularAfastado) ? document.getElementById('orgaoSubstitutoEmail').value : null
+  };
+  
+  // Validações
+  if (!formData.nome || !formData.unidade_id) {
+    alert('Nome do órgão e unidade são obrigatórios');
+    return;
+  }
+  
+  if (!isVaga && (!formData.titular_nome || !formData.titular_email)) {
+    alert('Nome e email do titular são obrigatórios quando o órgão não está vago');
+    return;
+  }
+  
+  if ((isVaga || isTitularAfastado) && (!formData.substituto_nome || !formData.substituto_email)) {
+    alert('Nome e email do substituto são obrigatórios quando o órgão está vago ou o titular está afastado');
+    return;
+  }
+  
+  try {
+    const url = orgaoId ? `${API_BASE_URL}/orgaos/${orgaoId}` : `${API_BASE_URL}/orgaos`;
+    const method = orgaoId ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      alert(result.message);
+      closeOrgaoModal();
+      loadOrgaosList(); // Recarregar lista
+      loadAdminData(); // Recarregar dashboard
+    } else {
+      alert(`Erro: ${result.error}`);
+    }
+  } catch (error) {
+    console.error('Erro ao salvar órgão:', error);
+    alert('Erro ao salvar órgão');
+  }
+}
+
+// Configurar campos condicionais
+function setupConditionalFields() {
+  // Checkbox de coordenador
+  const coordenadorCheckbox = document.getElementById('unidadeTemCoordenador');
+  const coordenadorFields = document.getElementById('coordenadorFields');
+  
+  if (coordenadorCheckbox && coordenadorFields) {
+    coordenadorCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        coordenadorFields.style.display = 'block';
+        document.getElementById('unidadeCoordenador').required = true;
+        document.getElementById('unidadeEmailCoordenador').required = true;
+      } else {
+        coordenadorFields.style.display = 'none';
+        document.getElementById('unidadeCoordenador').required = false;
+        document.getElementById('unidadeEmailCoordenador').required = false;
+        document.getElementById('unidadeCoordenador').value = '';
+        document.getElementById('unidadeEmailCoordenador').value = '';
+      }
+    });
+  }
+  
+  // Checkbox de supervisor
+  const supervisorCheckbox = document.getElementById('unidadeTemSupervisor');
+  const supervisorFields = document.getElementById('supervisorFields');
+  
+  if (supervisorCheckbox && supervisorFields) {
+    supervisorCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        supervisorFields.style.display = 'block';
+        document.getElementById('unidadeSupervisor').required = true;
+        document.getElementById('unidadeEmailSupervisor').required = true;
+      } else {
+        supervisorFields.style.display = 'none';
+        document.getElementById('unidadeSupervisor').required = false;
+        document.getElementById('unidadeEmailSupervisor').required = false;
+        document.getElementById('unidadeSupervisor').value = '';
+        document.getElementById('unidadeEmailSupervisor').value = '';
+      }
+    });
+  }
+  
+  // Checkbox de órgão vago
+  const vagaCheckbox = document.getElementById('orgaoVaga');
+  const titularFields = document.getElementById('titularFields');
+  const substitutoFields = document.getElementById('substitutoFields');
+  
+  if (vagaCheckbox && titularFields && substitutoFields) {
+    vagaCheckbox.addEventListener('change', function() {
+      if (this.checked) {
+        titularFields.style.display = 'none';
+        substitutoFields.style.display = 'block';
+        document.getElementById('orgaoTitularNome').required = false;
+        document.getElementById('orgaoTitularEmail').required = false;
+        document.getElementById('orgaoSubstitutoNome').required = true;
+        document.getElementById('orgaoSubstitutoEmail').required = true;
+        document.getElementById('orgaoTitularNome').value = '';
+        document.getElementById('orgaoTitularEmail').value = '';
+      } else {
+        titularFields.style.display = 'block';
+        document.getElementById('orgaoTitularNome').required = true;
+        document.getElementById('orgaoTitularEmail').required = true;
+        checkSubstitutoFields();
+      }
+    });
+  }
+  
+  // Checkbox de titular afastado
+  const afastadoCheckbox = document.getElementById('orgaoTitularAfastado');
+  
+  if (afastadoCheckbox && substitutoFields) {
+    afastadoCheckbox.addEventListener('change', function() {
+      checkSubstitutoFields();
+    });
+  }
+}
+
+// Verificar se deve mostrar campos de substituto
+function checkSubstitutoFields() {
+  const vagaCheckbox = document.getElementById('orgaoVaga');
+  const afastadoCheckbox = document.getElementById('orgaoTitularAfastado');
+  const substitutoFields = document.getElementById('substitutoFields');
+  
+  if (vagaCheckbox && afastadoCheckbox && substitutoFields) {
+    if (vagaCheckbox.checked || afastadoCheckbox.checked) {
+      substitutoFields.style.display = 'block';
+      document.getElementById('orgaoSubstitutoNome').required = true;
+      document.getElementById('orgaoSubstitutoEmail').required = true;
+    } else {
+      substitutoFields.style.display = 'none';
+      document.getElementById('orgaoSubstitutoNome').required = false;
+      document.getElementById('orgaoSubstitutoEmail').required = false;
+      document.getElementById('orgaoSubstitutoNome').value = '';
+      document.getElementById('orgaoSubstitutoEmail').value = '';
+    }
+  }
+}
+
+/* =========================
    INIT
 ========================= */
 window.onload = async () => {
   console.log('🚀 Iniciando aplicação...');
   
   // Verificar autenticação
-  checkAuth();
+  await checkAuth();
   
   // Configurar formulário de login
   document.getElementById('loginForm').addEventListener('submit', handleLogin);
   
+  // Configurar formulário de unidade
+  document.getElementById('unidadeForm').addEventListener('submit', handleUnidadeSubmit);
+  
+  // Configurar formulário de órgão
+  document.getElementById('orgaoForm').addEventListener('submit', handleOrgaoSubmit);
+  
+  // Configurar checkboxes para campos condicionais
+  setupConditionalFields();
+  
   // Fechar modal ao clicar fora dele
   window.onclick = function(event) {
-    const modal = document.getElementById('loginModal');
-    if (event.target === modal) {
+    const loginModal = document.getElementById('loginModal');
+    const unidadeModal = document.getElementById('unidadeModal');
+    const orgaoModal = document.getElementById('orgaoModal');
+    
+    if (event.target === loginModal) {
       closeLoginModal();
+    } else if (event.target === unidadeModal) {
+      closeUnidadeModal();
+    } else if (event.target === orgaoModal) {
+      closeOrgaoModal();
     }
   };
   
-  // Carregar dados da API
-  await fetchData();
-  
-  // Exibir unidades carregadas
-  displayUnits(unidades);
+  // Carregar dados da API apenas se não estiver logado como admin
+  if (!currentAdmin) {
+    await fetchData();
+    displayUnits(unidades);
+  }
   
   console.log('✅ Aplicação iniciada com sucesso!');
 };
