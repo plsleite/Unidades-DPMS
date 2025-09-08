@@ -303,7 +303,7 @@ router.get('/orgaos', async (req, res) => {
       sql += ' WHERE ' + conditions.join(' AND ');
     }
     
-    sql += ' ORDER BY UPPER(u.nome), UPPER(o.nome)';
+    sql += ' ORDER BY UPPER(u.nome), CAST(SUBSTRING(o.nome FROM \'^([0-9]+)\') AS INTEGER), o.nome';
     
     const result = await query(sql, params);
     res.json(result.rows);
@@ -579,7 +579,7 @@ router.get('/unidades-completas', async (req, res) => {
         orgaosSql += ' AND titular_afastado = true';
       }
       
-      orgaosSql += ' ORDER BY UPPER(nome)';
+      orgaosSql += ' ORDER BY CAST(SUBSTRING(nome FROM \'^([0-9]+)\') AS INTEGER), nome';
       
       const orgaosResult = await query(orgaosSql, orgaosParams);
       unidade.orgaos = orgaosResult.rows;
@@ -589,6 +589,150 @@ router.get('/unidades-completas', async (req, res) => {
     
   } catch (error) {
     console.error('Erro ao buscar unidades completas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// =========================
+// ENDPOINTS DO DASHBOARD
+// =========================
+
+// GET /api/dashboard/stats - Estatísticas gerais
+router.get('/dashboard/stats', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        (SELECT COUNT(*) FROM unidades) as total_unidades,
+        (SELECT COUNT(*) FROM orgaos) as total_defensorias,
+        (SELECT COUNT(*) FROM orgaos WHERE vaga = true) as defensorias_vagas,
+        (SELECT COUNT(*) FROM orgaos WHERE titular_afastado = true) as titulares_afastados,
+        (SELECT COUNT(*) FROM regionais) as total_regionais
+    `;
+    
+    const result = await query(sql);
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.error('Erro ao buscar estatísticas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/dashboard/regionais - Dados por regional
+router.get('/dashboard/regionais', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        r.id,
+        r.nome,
+        r.numero,
+        COUNT(DISTINCT u.id) as total_unidades,
+        COUNT(o.id) as total_defensorias,
+        COUNT(CASE WHEN o.vaga = true THEN 1 END) as defensorias_vagas,
+        COUNT(CASE WHEN o.titular_afastado = true THEN 1 END) as titulares_afastados
+      FROM regionais r
+      LEFT JOIN unidades u ON r.id = u.regional_id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id
+      GROUP BY r.id, r.nome, r.numero
+      ORDER BY r.numero
+    `;
+    
+    const result = await query(sql);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro ao buscar dados por regional:', error);
+    res.status(500).json({ error: 'Erro interno do servidor', details: error.message });
+  }
+});
+
+// GET /api/dashboard/unidades - Dados por unidade
+router.get('/dashboard/unidades', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        u.id,
+        u.nome,
+        r.nome as regional_nome,
+        r.numero as regional_numero,
+        COUNT(o.id) as total_defensorias,
+        COUNT(CASE WHEN o.vaga = true THEN 1 END) as defensorias_vagas,
+        COUNT(CASE WHEN o.titular_afastado = true THEN 1 END) as titulares_afastados
+      FROM unidades u
+      LEFT JOIN regionais r ON u.regional_id = r.id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id
+      GROUP BY u.id, u.nome, r.nome, r.numero
+      ORDER BY UPPER(u.nome)
+    `;
+    
+    const result = await query(sql);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro ao buscar dados por unidade:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/dashboard/problemas - Defensorias com problemas
+router.get('/dashboard/problemas', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        o.id,
+        o.nome,
+        u.nome as unidade_nome,
+        r.nome as regional_nome,
+        o.titular_nome,
+        o.titular_afastado,
+        o.vaga,
+        o.substituto_nome,
+        CASE 
+          WHEN o.vaga = true AND o.titular_afastado = true THEN 'Vaga e Afastado'
+          WHEN o.vaga = true THEN 'Vaga'
+          WHEN o.titular_afastado = true THEN 'Afastado'
+          ELSE 'Normal'
+        END as status
+      FROM orgaos o
+      LEFT JOIN unidades u ON o.unidade_id = u.id
+      LEFT JOIN regionais r ON u.regional_id = r.id
+      WHERE o.vaga = true OR o.titular_afastado = true
+      ORDER BY 
+        CASE 
+          WHEN o.vaga = true AND o.titular_afastado = true THEN 1
+          WHEN o.vaga = true THEN 2
+          WHEN o.titular_afastado = true THEN 3
+        END,
+        UPPER(u.nome), UPPER(o.nome)
+    `;
+    
+    const result = await query(sql);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro ao buscar defensorias com problemas:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/dashboard/distribuicao - Distribuição de defensorias por regional
+router.get('/dashboard/distribuicao', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        r.nome as regional,
+        r.numero,
+        COUNT(o.id) as total_defensorias,
+        COUNT(CASE WHEN o.vaga = true THEN 1 END) as vagas,
+        COUNT(CASE WHEN o.titular_afastado = true THEN 1 END) as afastados,
+        COUNT(CASE WHEN o.vaga = false AND o.titular_afastado = false THEN 1 END) as normais
+      FROM regionais r
+      LEFT JOIN unidades u ON r.id = u.regional_id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id
+      GROUP BY r.id, r.nome, r.numero
+      ORDER BY r.numero
+    `;
+    
+    const result = await query(sql);
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Erro ao buscar distribuição:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

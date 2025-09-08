@@ -16,6 +16,7 @@ let unidades = []; // Array vazio - será preenchido pela API
 let regionais = []; // Array vazio - será preenchido pela API
 let isLoading = false;
 let currentAdmin = null; // Dados do administrador logado
+let selectedRegionais = []; // Array para armazenar regionais selecionadas
 
 /* =========================
    FUNÇÕES DE API
@@ -72,6 +73,8 @@ async function fetchData() {
     const regionaisResponse = await fetch('/api/regionais');
     if (regionaisResponse.ok) {
       regionais = await regionaisResponse.json();
+      // Carregar chips das regionais
+      loadRegionalChips();
     }
     
     console.log('✅ Dados carregados da API:', unidades.length, 'unidades');
@@ -170,6 +173,91 @@ function displayUnits(filteredUnits = unidades, message = "") {
 }
 
 /* =========================
+   FILTROS POR REGIONAL
+========================= */
+
+// Função para carregar chips das regionais
+function loadRegionalChips() {
+  const container = document.getElementById('regionalChips');
+  if (!container || !regionais.length) return;
+
+  container.innerHTML = '';
+
+  regionais.forEach(regional => {
+    const chip = document.createElement('div');
+    chip.className = 'regional-chip';
+    chip.innerHTML = `
+      <input type="checkbox" id="regional_${regional.id}" value="${regional.id}">
+      <span class="chip-text">${regional.nome}</span>
+    `;
+    
+    // Adicionar evento de clique em todo o chip
+    chip.addEventListener('click', (e) => {
+      e.preventDefault();
+      toggleRegional(regional.id);
+    });
+    
+    container.appendChild(chip);
+  });
+}
+
+// Função para alternar visibilidade dos filtros por regional
+function toggleRegionalFilters() {
+  const chipsContainer = document.getElementById('regionalChips');
+  const toggleCheckbox = document.getElementById('toggleRegionalCheckbox');
+  const toggleText = document.getElementById('toggleRegionalText');
+
+  if (toggleCheckbox.checked) {
+    // Mostrar filtros
+    chipsContainer.style.display = 'flex';
+    toggleText.textContent = 'Filtrar por Regional';
+  } else {
+    // Ocultar filtros e limpar seleções
+    chipsContainer.style.display = 'none';
+    clearRegionalFilters();
+    toggleText.textContent = 'Filtrar por Regional';
+  }
+}
+
+// Função para alternar seleção de regional
+function toggleRegional(regionalId) {
+  const checkbox = document.getElementById(`regional_${regionalId}`);
+  const chip = checkbox.closest('.regional-chip');
+  
+  // Alternar o estado do checkbox
+  checkbox.checked = !checkbox.checked;
+  
+  if (checkbox.checked) {
+    selectedRegionais.push(regionalId);
+    chip.classList.add('selected');
+  } else {
+    selectedRegionais = selectedRegionais.filter(id => id !== regionalId);
+    chip.classList.remove('selected');
+  }
+  
+  // Aplicar filtros
+  searchUnit();
+}
+
+// Função para limpar seleção de regionais
+function clearRegionalFilters() {
+  selectedRegionais = [];
+  document.querySelectorAll('.regional-chip').forEach(chip => {
+    chip.classList.remove('selected');
+    const checkbox = chip.querySelector('input[type="checkbox"]');
+    if (checkbox) checkbox.checked = false;
+  });
+
+  // Desmarcar checkbox principal
+  const toggleCheckbox = document.getElementById('toggleRegionalCheckbox');
+  if (toggleCheckbox) toggleCheckbox.checked = false;
+
+  // Aplicar filtros
+  searchUnit();
+}
+
+
+/* =========================
    BUSCA + FILTROS
 ========================= */
 function searchUnit() {
@@ -181,9 +269,14 @@ function searchUnit() {
 
   let filtered = unidades;
 
+  // filtro por regionais selecionadas
+  if (selectedRegionais.length > 0) {
+    filtered = filtered.filter(u => selectedRegionais.includes(u.regional.id));
+  }
+
   // filtro de texto
   if (query) {
-    filtered = unidades
+    filtered = filtered
       .map(u => {
         const orgaosFiltrados = u.orgaos.filter(o =>
           normalizeText(u.nome).includes(query) ||
@@ -207,16 +300,39 @@ function searchUnit() {
     filtered = filtered
       .map(u => ({ ...u, orgaos: u.orgaos.filter(o => o.titular.vaga === true) }))
       .filter(u => u.orgaos.length > 0);
-    displayUnits(filtered, "🔎 Exibindo apenas Defensorias vagas.");
+    
+    let message = "🔎 Exibindo apenas Defensorias vagas.";
+    if (selectedRegionais.length > 0) {
+      const regionaisNomes = selectedRegionais.map(id => 
+        regionais.find(r => r.id === id)?.nome
+      ).filter(Boolean).join(', ');
+      message += ` (Regionais: ${regionaisNomes})`;
+    }
+    displayUnits(filtered, message);
 
   } else if (selectedFilter === "afastados") {
     filtered = filtered
       .map(u => ({ ...u, orgaos: u.orgaos.filter(o => o.titular.afastado === true) }))
       .filter(u => u.orgaos.length > 0);
-    displayUnits(filtered, "🔎 Exibindo apenas Defensorias com titulares afastados.");
+    
+    let message = "🔎 Exibindo apenas Defensorias com titulares afastados.";
+    if (selectedRegionais.length > 0) {
+      const regionaisNomes = selectedRegionais.map(id => 
+        regionais.find(r => r.id === id)?.nome
+      ).filter(Boolean).join(', ');
+      message += ` (Regionais: ${regionaisNomes})`;
+    }
+    displayUnits(filtered, message);
 
   } else {
-    displayUnits(filtered);
+    let message = "";
+    if (selectedRegionais.length > 0) {
+      const regionaisNomes = selectedRegionais.map(id => 
+        regionais.find(r => r.id === id)?.nome
+      ).filter(Boolean).join(', ');
+      message = `🔎 Exibindo unidades das regionais: ${regionaisNomes}`;
+    }
+    displayUnits(filtered, message);
   }
 }
 
@@ -1059,7 +1175,7 @@ window.onload = async () => {
   // Carregar dados da API apenas se não estiver logado como admin
   if (!currentAdmin) {
     await fetchData();
-    displayUnits(unidades);
+  displayUnits(unidades);
   }
   
   console.log('✅ Aplicação iniciada com sucesso!');

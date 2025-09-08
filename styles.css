@@ -95,6 +95,116 @@ body {
   box-shadow: 0 2px 8px rgba(78, 155, 90, 0.3);
 }
 
+/* ===== Filtros por Regional ===== */
+.regional-filters {
+  margin: 1rem 0 2rem 0;
+  text-align: center;
+}
+
+.regional-filters .filter-chip {
+  display: inline-block;
+  margin: 0.5rem;
+  padding: 8px 16px;
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  border-radius: 25px;
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: all 0.3s ease;
+  user-select: none;
+}
+
+.regional-filters .filter-chip:hover {
+  background: #d4edda;
+  border-color: #4e9b5a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.regional-filters .filter-chip input[type="checkbox"] {
+  display: none;
+}
+
+.regional-filters .filter-chip {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.regional-filters .filter-chip #toggleRegionalIcon {
+  font-size: 0.8rem;
+  transition: transform 0.3s ease;
+  color: #666;
+}
+
+.regional-filters .filter-chip:has(input:checked) #toggleRegionalIcon {
+  transform: rotate(180deg);
+  color: #4caf50;
+}
+
+.regional-filters .filter-chip:has(input:checked) {
+  background: #4e9b5a;
+  border-color: #3a7745;
+  color: white;
+  box-shadow: 0 2px 8px rgba(78, 155, 90, 0.3);
+}
+
+.regional-filters .filter-chip:has(input:checked):hover {
+  background: #3a7745;
+  box-shadow: 0 4px 12px rgba(78, 155, 90, 0.4);
+}
+
+.regional-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  justify-content: center;
+  max-width: 100%;
+}
+
+.regional-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.3rem 0.7rem;
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 15px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  font-weight: 400;
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.regional-chip:hover {
+  background: #e9ecef;
+  border-color: #28a745;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.regional-chip.selected {
+  background: rgba(76, 175, 80, 0.15);
+  color: #4caf50;
+  border-color: #4caf50;
+  box-shadow: 0 2px 4px rgba(76, 175, 80, 0.2);
+}
+
+.regional-chip input[type="checkbox"] {
+  margin: 0;
+  width: 12px;
+  height: 12px;
+  accent-color: #28a745;
+}
+
+.regional-chip .chip-text {
+  white-space: nowrap;
+}
+
+
 /* ===== Cartões ===== */
 .unit {
   border: 1px solid #e0e0e0;
@@ -795,6 +905,147 @@ body {
   padding: 1rem;
   background: #f8f9fa;
   border-radius: 8px;
+}
+
+/* ===== Dashboard Charts and Tables ===== */
+.dashboard-charts {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.chart-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.chart-container h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.dashboard-tables {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 2rem;
+  margin: 2rem 0;
+}
+
+.table-container {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e9ecef;
+}
+
+.table-container h3 {
+  margin: 0 0 1rem 0;
+  color: #2c3e50;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.table-wrapper {
+  overflow-x: auto;
+  border-radius: 8px;
+  border: 1px solid #e9ecef;
+}
+
+#unidadesTable, #problemasTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+#unidadesTable th, #problemasTable th {
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  white-space: nowrap;
+}
+
+#unidadesTable td, #problemasTable td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: top;
+}
+
+#unidadesTable tbody tr:hover, #problemasTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+.status-badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+}
+
+.status-vaga {
+  background-color: #fff3cd;
+  color: #856404;
+}
+
+.status-afastado {
+  background-color: #f8d7da;
+  color: #721c24;
+}
+
+.status-ambos {
+  background-color: #d1ecf1;
+  color: #0c5460;
+}
+
+.percent-problemas {
+  font-weight: 600;
+}
+
+.percent-alto {
+  color: #dc3545;
+}
+
+.percent-medio {
+  color: #ffc107;
+}
+
+.percent-baixo {
+  color: #28a745;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-charts {
+    grid-template-columns: 1fr;
+  }
+  
+  .chart-container {
+    padding: 1rem;
+  }
+  
+  .table-container {
+    padding: 1rem;
+  }
+  
+  #unidadesTable, #problemasTable {
+    font-size: 0.8rem;
+  }
+  
+  #unidadesTable th, #problemasTable th,
+  #unidadesTable td, #problemasTable td {
+    padding: 8px 4px;
+  }
 }
 
 .form-section h4 {

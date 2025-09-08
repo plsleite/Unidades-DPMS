@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Defensoria Pública MS</title>
   <link rel="stylesheet" href="styles.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <!-- Botão de admin no canto superior direito -->
@@ -36,6 +37,18 @@
         <input type="radio" name="filter" value="afastados" onchange="searchUnit()"> Titulares Afastados
       </label>
     </div>
+
+            <!-- Filtros por Regional -->
+            <div class="regional-filters">
+              <label class="filter-chip" id="toggleRegionalChip">
+                <input type="checkbox" id="toggleRegionalCheckbox" onchange="toggleRegionalFilters()">
+                <span id="toggleRegionalText">Filtrar por Regional</span>
+                <span id="toggleRegionalIcon">▼</span>
+              </label>
+              <div class="regional-chips" id="regionalChips" style="display: none;">
+                <!-- Chips das regionais serão carregados aqui -->
+              </div>
+            </div>
 
     <div id="unitList" class="unit-list">
       <!-- Unidades aparecem aqui -->
@@ -103,6 +116,55 @@
           <div class="stat-card">
             <h3>Titulares Afastados</h3>
             <span id="titularesAfastados" class="stat-number">-</span>
+          </div>
+        </div>
+
+              <!-- Gráficos e Análises Detalhadas -->
+              <div class="dashboard-charts">
+                <!-- Gráficos removidos temporariamente -->
+              </div>
+
+        <div class="dashboard-tables">
+          <div class="table-container">
+            <h3>🏢 Unidades com Mais Problemas</h3>
+            <div class="table-wrapper">
+              <table id="unidadesTable">
+                <thead>
+                  <tr>
+                    <th>Unidade</th>
+                    <th>Regional</th>
+                    <th>Total Defensorias</th>
+                    <th>Vagas</th>
+                    <th>Afastados</th>
+                    <th>% Problemas</th>
+                  </tr>
+                </thead>
+                <tbody id="unidadesTableBody">
+                  <!-- Dados serão carregados aqui -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <h3>⚠️ Defensorias com Problemas</h3>
+            <div class="table-wrapper">
+              <table id="problemasTable">
+                <thead>
+                  <tr>
+                    <th>Defensoria</th>
+                    <th>Unidade</th>
+                    <th>Regional</th>
+                    <th>Status</th>
+                    <th>Titular</th>
+                    <th>Substituto</th>
+                  </tr>
+                </thead>
+                <tbody id="problemasTableBody">
+                  <!-- Dados serão carregados aqui -->
+                </tbody>
+              </table>
+            </div>
           </div>
         </div>
       </div>
@@ -295,6 +357,143 @@
       </div>
     </div>
 
+  <script>
+    // Dashboard Charts and Data Loading
+    let dashboardData = {};
+
+    // Load dashboard data when admin dashboard is shown
+    async function loadDashboardData() {
+      console.log('🔄 Carregando dados do dashboard...');
+      try {
+        // Load statistics
+        console.log('📊 Carregando estatísticas...');
+        const statsResponse = await fetch('/api/dashboard/stats');
+        dashboardData.stats = await statsResponse.json();
+        console.log('✅ Estatísticas carregadas:', dashboardData.stats);
+        updateStatsDisplay();
+
+        // Load regional data
+        console.log('🏢 Carregando dados regionais...');
+        const regionaisResponse = await fetch('/api/dashboard/regionais');
+        dashboardData.regionais = await regionaisResponse.json();
+        console.log('✅ Dados regionais carregados:', dashboardData.regionais.length, 'regionais');
+
+        // Load units data
+        console.log('🏛️ Carregando dados das unidades...');
+        const unidadesResponse = await fetch('/api/dashboard/unidades');
+        dashboardData.unidades = await unidadesResponse.json();
+        console.log('✅ Dados das unidades carregados:', dashboardData.unidades.length, 'unidades');
+        renderUnidadesTable();
+
+        // Load problems data
+        console.log('⚠️ Carregando dados dos problemas...');
+        const problemasResponse = await fetch('/api/dashboard/problemas');
+        dashboardData.problemas = await problemasResponse.json();
+        console.log('✅ Dados dos problemas carregados:', dashboardData.problemas.length, 'problemas');
+        renderProblemasTable();
+
+        console.log('🎉 Dashboard carregado com sucesso!');
+
+      } catch (error) {
+        console.error('❌ Erro ao carregar dados do dashboard:', error);
+        showError('Erro ao carregar dados do dashboard');
+      }
+    }
+
+    function updateStatsDisplay() {
+      if (dashboardData.stats) {
+        document.getElementById('totalUnidades').textContent = dashboardData.stats.total_unidades;
+        document.getElementById('totalOrgaos').textContent = dashboardData.stats.total_defensorias;
+        document.getElementById('orgaosVagos').textContent = dashboardData.stats.defensorias_vagas;
+        document.getElementById('titularesAfastados').textContent = dashboardData.stats.titulares_afastados;
+      }
+    }
+
+
+    function renderUnidadesTable() {
+      if (!dashboardData.unidades) return;
+
+      const tbody = document.getElementById('unidadesTableBody');
+      tbody.innerHTML = '';
+
+      // Sort by problems percentage
+      const sortedUnidades = dashboardData.unidades
+        .map(u => ({
+          ...u,
+          percentProblemas: u.total_defensorias > 0 ? 
+            ((parseInt(u.defensorias_vagas) + parseInt(u.titulares_afastados)) / parseInt(u.total_defensorias) * 100).toFixed(1) : 0
+        }))
+        .sort((a, b) => parseFloat(b.percentProblemas) - parseFloat(a.percentProblemas))
+        .slice(0, 10); // Top 10
+
+      sortedUnidades.forEach(unidade => {
+        const row = document.createElement('tr');
+        const percent = parseFloat(unidade.percentProblemas);
+        const percentClass = percent > 30 ? 'percent-alto' : percent > 15 ? 'percent-medio' : 'percent-baixo';
+        
+        row.innerHTML = `
+          <td>${unidade.nome}</td>
+          <td>Regional ${unidade.regional_numero}</td>
+          <td>${unidade.total_defensorias}</td>
+          <td>${unidade.defensorias_vagas}</td>
+          <td>${unidade.titulares_afastados}</td>
+          <td><span class="percent-problemas ${percentClass}">${unidade.percentProblemas}%</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderProblemasTable() {
+      if (!dashboardData.problemas) return;
+
+      const tbody = document.getElementById('problemasTableBody');
+      tbody.innerHTML = '';
+
+      dashboardData.problemas.slice(0, 20).forEach(problema => {
+        const row = document.createElement('tr');
+        const statusClass = problema.status === 'Vaga' ? 'status-vaga' : 
+                           problema.status === 'Afastado' ? 'status-afastado' : 'status-ambos';
+        
+        row.innerHTML = `
+          <td>${problema.nome}</td>
+          <td>${problema.unidade_nome}</td>
+          <td>${problema.regional_nome}</td>
+          <td><span class="status-badge ${statusClass}">${problema.status}</span></td>
+          <td>${problema.titular_nome || '-'}</td>
+          <td>${problema.substituto_nome || '-'}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function showError(message) {
+      console.error(message);
+      // You can add a toast notification here if needed
+    }
+
+    // Override the original showAdminTab function to load dashboard data
+    const originalShowAdminTab = window.showAdminTab;
+    window.showAdminTab = function(tabName) {
+      originalShowAdminTab(tabName);
+      if (tabName === 'dashboard') {
+        // Aguardar um pouco para garantir que o DOM está pronto
+        setTimeout(() => {
+          loadDashboardData();
+        }, 100);
+      }
+    };
+
+    // Carregar dados do dashboard quando a página carregar (se já estiver na aba dashboard)
+    document.addEventListener('DOMContentLoaded', function() {
+      // Verificar se já estamos na aba dashboard
+      const dashboardTab = document.getElementById('adminDashboard');
+      if (dashboardTab && dashboardTab.classList.contains('active')) {
+        setTimeout(() => {
+          loadDashboardData();
+        }, 500);
+      }
+    });
+  </script>
   <script src="script.js"></script>
 </body>
 </html>

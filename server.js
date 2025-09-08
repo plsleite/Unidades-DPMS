@@ -52,6 +52,7 @@ app.use('/api', apiRoutes);
 // Usar rotas de autenticação
 app.use('/api/auth', authRoutes);
 
+
 // Iniciar servidor
 const PORT = config.server.port;
 app.listen(PORT, () => {
