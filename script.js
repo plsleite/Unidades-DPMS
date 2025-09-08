@@ -53,6 +53,7 @@ async function fetchData() {
       emailCoordenador: unidade.email_coordenador,
       supervisor: unidade.supervisor,
       emailSupervisor: unidade.email_supervisor,
+      coordenacoes: unidade.coordenacoes || [],
       orgaos: unidade.orgaos.map(orgao => ({
         id: orgao.id,
         nome: orgao.nome,
@@ -108,15 +109,26 @@ function showError(message) {
 function createUnitCard(unidade) {
   let card = `
     <div class="unit">
-      <div class="unit-header">${unidade.nome}</div>
-      <div class="unit-body">
+      <div class="unit-header" onclick="toggleUnitCollapse(${unidade.id})" style="cursor: pointer;">
+        <span class="unit-name">${unidade.nome}</span>
+        <span class="collapse-icon" id="icon-${unidade.id}">▼</span>
+      </div>
+      <div class="unit-body" id="body-${unidade.id}">
         <p><strong>Endereço:</strong> ${unidade.endereco}</p>
         <p><strong>Telefone:</strong> ${unidade.telefone}</p>
         ${unidade.regional ? `<p><strong>Regional:</strong> ${unidade.regional.nome}</p>` : ''}
-        ${unidade.coordenador ? `<p><strong>Coordenador:</strong> ${unidade.coordenador}</p>` : ''}
-        ${unidade.supervisor ? `<p><strong>Supervisor:</strong> ${unidade.supervisor}</p>` : ''}
+        ${unidade.coordenador && unidade.coordenador.trim() !== '' ? `<p><strong>Coordenação:</strong> ${unidade.coordenador}</p>` : ''}
+        ${unidade.supervisor && unidade.supervisor.trim() !== '' ? `<p><strong>Supervisão:</strong> ${unidade.supervisor}</p>` : ''}
+        
+        <!-- Coordenações de Segunda Instância -->
+        ${unidade.coordenacoes && unidade.coordenacoes.length > 0 ? unidade.coordenacoes.map(coordenacao => {
+          // Capitalizar a primeira letra de cada palavra
+          const tipoCapitalizado = coordenacao.tipo_coordenacao.charAt(0).toUpperCase() + 
+                                 coordenacao.tipo_coordenacao.slice(1).toLowerCase();
+          return `<p><strong>Coordenação ${tipoCapitalizado}:</strong> ${coordenacao.nome_coordenador}${coordenacao.email_coordenador ? ` (${coordenacao.email_coordenador})` : ''}</p>`;
+        }).join('') : ''}
       </div>
-      <div class="unit-extra">
+      <div class="unit-extra" id="extra-${unidade.id}">
   `;
 
   unidade.orgaos.forEach(orgao => {
@@ -611,7 +623,7 @@ async function loadUnidadesList() {
         <div class="admin-item-info">
           <h4>${unidade.nome}</h4>
           <p>${unidade.endereco} • ${unidade.regional_nome || 'Sem regional'}</p>
-          <p>Coordenador: ${unidade.coordenador || 'Não informado'}</p>
+          <p>Coordenação: ${unidade.coordenador || 'Não informado'}</p>
         </div>
         <div class="admin-item-actions">
           <button class="btn-edit" onclick="editUnidade(${unidade.id})">Editar</button>
@@ -665,6 +677,15 @@ function showAdminTab(tabName) {
   // Ativar aba e conteúdo selecionados
   event.target.classList.add('active');
   document.getElementById(`admin${tabName.charAt(0).toUpperCase() + tabName.slice(1)}`).classList.add('active');
+  
+  // Carregar dados específicos da aba
+  if (tabName === 'dashboard') {
+    loadDashboardData();
+  } else if (tabName === 'unidades') {
+    loadUnidadesList();
+  } else if (tabName === 'orgaos') {
+    loadOrgaosList();
+  }
 }
 
 // Funções de modal de unidade
@@ -680,6 +701,17 @@ function openUnidadeModal(unidadeId = null) {
   } else {
     title.textContent = 'Nova Unidade';
     form.reset();
+    // Limpar campos condicionais
+    document.getElementById('coordenadorFields').style.display = 'none';
+    document.getElementById('supervisorFields').style.display = 'none';
+    document.getElementById('coordenacoesSegundaInstancia').style.display = 'none';
+    
+    // Mostrar seções de coordenador e supervisor para nova unidade
+    const coordenadorSection = document.getElementById('unidadeTemCoordenador').parentElement.parentElement.parentElement;
+    const supervisorSection = document.getElementById('unidadeTemSupervisor').parentElement.parentElement.parentElement;
+    
+    coordenadorSection.style.display = 'block';
+    supervisorSection.style.display = 'block';
   }
   
   modal.style.display = 'block';
@@ -719,38 +751,104 @@ async function loadUnidadeData(unidadeId) {
       document.getElementById('unidadeTelefone').value = unidade.telefone || '';
       document.getElementById('unidadeRegional').value = unidade.regional_id || '';
       
-      // Coordenador
-      const temCoordenador = !!(unidade.coordenador && unidade.email_coordenador);
-      document.getElementById('unidadeTemCoordenador').checked = temCoordenador;
-      if (temCoordenador) {
-        document.getElementById('coordenadorFields').style.display = 'block';
-        document.getElementById('unidadeCoordenador').value = unidade.coordenador || '';
-        document.getElementById('unidadeEmailCoordenador').value = unidade.email_coordenador || '';
-        document.getElementById('unidadeCoordenador').required = true;
-        document.getElementById('unidadeEmailCoordenador').required = true;
-      } else {
+      // Coordenador e Supervisor (ocultar para CAMPO GRANDE | 2ª INSTÂNCIA)
+      const isSegundaInstancia = unidade.nome === 'CAMPO GRANDE | 2ª INSTÂNCIA';
+      
+      if (isSegundaInstancia) {
+        // Ocultar seções inteiras de coordenador e supervisor
+        const coordenadorSection = document.getElementById('unidadeTemCoordenador').parentElement.parentElement.parentElement;
+        const supervisorSection = document.getElementById('unidadeTemSupervisor').parentElement.parentElement.parentElement;
+        
+        coordenadorSection.style.display = 'none';
+        supervisorSection.style.display = 'none';
         document.getElementById('coordenadorFields').style.display = 'none';
+        document.getElementById('supervisorFields').style.display = 'none';
+        
+        // Limpar campos
         document.getElementById('unidadeCoordenador').value = '';
         document.getElementById('unidadeEmailCoordenador').value = '';
-        document.getElementById('unidadeCoordenador').required = false;
-        document.getElementById('unidadeEmailCoordenador').required = false;
-      }
-      
-      // Supervisor
-      const temSupervisor = !!(unidade.supervisor && unidade.email_supervisor);
-      document.getElementById('unidadeTemSupervisor').checked = temSupervisor;
-      if (temSupervisor) {
-        document.getElementById('supervisorFields').style.display = 'block';
-        document.getElementById('unidadeSupervisor').value = unidade.supervisor || '';
-        document.getElementById('unidadeEmailSupervisor').value = unidade.email_supervisor || '';
-        document.getElementById('unidadeSupervisor').required = true;
-        document.getElementById('unidadeEmailSupervisor').required = true;
-      } else {
-        document.getElementById('supervisorFields').style.display = 'none';
         document.getElementById('unidadeSupervisor').value = '';
         document.getElementById('unidadeEmailSupervisor').value = '';
+        document.getElementById('unidadeCoordenador').required = false;
+        document.getElementById('unidadeEmailCoordenador').required = false;
         document.getElementById('unidadeSupervisor').required = false;
         document.getElementById('unidadeEmailSupervisor').required = false;
+      } else {
+        // Mostrar seções normalmente para outras unidades
+        const coordenadorSection = document.getElementById('unidadeTemCoordenador').parentElement.parentElement.parentElement;
+        const supervisorSection = document.getElementById('unidadeTemSupervisor').parentElement.parentElement.parentElement;
+        
+        coordenadorSection.style.display = 'block';
+        supervisorSection.style.display = 'block';
+        
+        // Coordenador
+        const temCoordenador = !!(unidade.coordenador && unidade.email_coordenador);
+        document.getElementById('unidadeTemCoordenador').checked = temCoordenador;
+        if (temCoordenador) {
+          document.getElementById('coordenadorFields').style.display = 'block';
+          document.getElementById('unidadeCoordenador').value = unidade.coordenador || '';
+          document.getElementById('unidadeEmailCoordenador').value = unidade.email_coordenador || '';
+          document.getElementById('unidadeCoordenador').required = true;
+          document.getElementById('unidadeEmailCoordenador').required = true;
+        } else {
+          document.getElementById('coordenadorFields').style.display = 'none';
+          document.getElementById('unidadeCoordenador').value = '';
+          document.getElementById('unidadeEmailCoordenador').value = '';
+          document.getElementById('unidadeCoordenador').required = false;
+          document.getElementById('unidadeEmailCoordenador').required = false;
+        }
+        
+        // Supervisor
+        const temSupervisor = !!(unidade.supervisor && unidade.email_supervisor);
+        document.getElementById('unidadeTemSupervisor').checked = temSupervisor;
+        if (temSupervisor) {
+          document.getElementById('supervisorFields').style.display = 'block';
+          document.getElementById('unidadeSupervisor').value = unidade.supervisor || '';
+          document.getElementById('unidadeEmailSupervisor').value = unidade.email_supervisor || '';
+          document.getElementById('unidadeSupervisor').required = true;
+          document.getElementById('unidadeEmailSupervisor').required = true;
+        } else {
+          document.getElementById('supervisorFields').style.display = 'none';
+          document.getElementById('unidadeSupervisor').value = '';
+          document.getElementById('unidadeEmailSupervisor').value = '';
+          document.getElementById('unidadeSupervisor').required = false;
+          document.getElementById('unidadeEmailSupervisor').required = false;
+        }
+      }
+      
+      // Coordenações de Segunda Instância (apenas para CAMPO GRANDE | 2ª INSTÂNCIA)
+      const coordenacoesSection = document.getElementById('coordenacoesSegundaInstancia');
+      if (unidade.nome === 'CAMPO GRANDE | 2ª INSTÂNCIA') {
+        coordenacoesSection.style.display = 'block';
+        
+        // Carregar coordenações existentes
+        if (unidade.coordenacoes && unidade.coordenacoes.length > 0) {
+          unidade.coordenacoes.forEach(coordenacao => {
+            switch (coordenacao.tipo_coordenacao) {
+              case 'ADMINISTRATIVA':
+                document.getElementById('coordenacaoAdminNome').value = coordenacao.nome_coordenador || '';
+                document.getElementById('coordenacaoAdminEmail').value = coordenacao.email_coordenador || '';
+                break;
+              case 'CIVEL':
+                document.getElementById('coordenacaoCivelNome').value = coordenacao.nome_coordenador || '';
+                document.getElementById('coordenacaoCivelEmail').value = coordenacao.email_coordenador || '';
+                break;
+              case 'CRIMINAL':
+                document.getElementById('coordenacaoCriminalNome').value = coordenacao.nome_coordenador || '';
+                document.getElementById('coordenacaoCriminalEmail').value = coordenacao.email_coordenador || '';
+                break;
+            }
+          });
+        }
+      } else {
+        coordenacoesSection.style.display = 'none';
+        // Limpar campos se não for a unidade de segunda instância
+        document.getElementById('coordenacaoAdminNome').value = '';
+        document.getElementById('coordenacaoAdminEmail').value = '';
+        document.getElementById('coordenacaoCivelNome').value = '';
+        document.getElementById('coordenacaoCivelEmail').value = '';
+        document.getElementById('coordenacaoCriminalNome').value = '';
+        document.getElementById('coordenacaoCriminalEmail').value = '';
       }
     } else {
       console.error('Erro ao carregar unidade:', unidade.error);
@@ -793,19 +891,39 @@ async function handleUnidadeSubmit(event) {
   event.preventDefault();
   
   const unidadeId = document.getElementById('unidadeId').value;
-  const temCoordenador = document.getElementById('unidadeTemCoordenador').checked;
-  const temSupervisor = document.getElementById('unidadeTemSupervisor').checked;
+  const nomeUnidade = document.getElementById('unidadeNome').value;
+  const isSegundaInstancia = nomeUnidade === 'CAMPO GRANDE | 2ª INSTÂNCIA';
   
-  const formData = {
-    nome: document.getElementById('unidadeNome').value,
-    endereco: document.getElementById('unidadeEndereco').value,
-    telefone: document.getElementById('unidadeTelefone').value,
-    regional_id: document.getElementById('unidadeRegional').value || null,
-    coordenador: temCoordenador ? document.getElementById('unidadeCoordenador').value : null,
-    email_coordenador: temCoordenador ? document.getElementById('unidadeEmailCoordenador').value : null,
-    supervisor: temSupervisor ? document.getElementById('unidadeSupervisor').value : null,
-    email_supervisor: temSupervisor ? document.getElementById('unidadeEmailSupervisor').value : null
-  };
+  let formData;
+  
+  if (isSegundaInstancia) {
+    // Para CAMPO GRANDE | 2ª INSTÂNCIA, não incluir coordenador e supervisor
+    formData = {
+      nome: nomeUnidade,
+      endereco: document.getElementById('unidadeEndereco').value,
+      telefone: document.getElementById('unidadeTelefone').value,
+      regional_id: document.getElementById('unidadeRegional').value || null,
+      coordenador: null,
+      email_coordenador: null,
+      supervisor: null,
+      email_supervisor: null
+    };
+  } else {
+    // Para outras unidades, incluir coordenador e supervisor normalmente
+    const temCoordenador = document.getElementById('unidadeTemCoordenador').checked;
+    const temSupervisor = document.getElementById('unidadeTemSupervisor').checked;
+    
+    formData = {
+      nome: nomeUnidade,
+      endereco: document.getElementById('unidadeEndereco').value,
+      telefone: document.getElementById('unidadeTelefone').value,
+      regional_id: document.getElementById('unidadeRegional').value || null,
+      coordenador: temCoordenador ? document.getElementById('unidadeCoordenador').value : null,
+      email_coordenador: temCoordenador ? document.getElementById('unidadeEmailCoordenador').value : null,
+      supervisor: temSupervisor ? document.getElementById('unidadeSupervisor').value : null,
+      email_supervisor: temSupervisor ? document.getElementById('unidadeEmailSupervisor').value : null
+    };
+  }
   
   // Validações
   if (!formData.nome || !formData.endereco || !formData.telefone || !formData.regional_id) {
@@ -813,14 +931,32 @@ async function handleUnidadeSubmit(event) {
     return;
   }
   
-  if (temCoordenador && (!formData.coordenador || !formData.email_coordenador)) {
-    alert('Nome e email do coordenador são obrigatórios quando marcado');
-    return;
+  // Validações de coordenador e supervisor (apenas para unidades que não sejam de segunda instância)
+  if (!isSegundaInstancia) {
+    const temCoordenador = document.getElementById('unidadeTemCoordenador').checked;
+    const temSupervisor = document.getElementById('unidadeTemSupervisor').checked;
+    
+    if (temCoordenador && (!formData.coordenador || !formData.email_coordenador)) {
+      alert('Nome e email da coordenação são obrigatórios quando marcado');
+      return;
+    }
+    
+    if (temSupervisor && (!formData.supervisor || !formData.email_supervisor)) {
+      alert('Nome e email da supervisão são obrigatórios quando marcado');
+      return;
+    }
   }
   
-  if (temSupervisor && (!formData.supervisor || !formData.email_supervisor)) {
-    alert('Nome e email do supervisor são obrigatórios quando marcado');
-    return;
+  // Validações específicas para coordenações de segunda instância
+  if (nomeUnidade === 'CAMPO GRANDE | 2ª INSTÂNCIA') {
+    const coordenacaoAdminNome = document.getElementById('coordenacaoAdminNome').value;
+    const coordenacaoCivelNome = document.getElementById('coordenacaoCivelNome').value;
+    const coordenacaoCriminalNome = document.getElementById('coordenacaoCriminalNome').value;
+    
+    if (!coordenacaoAdminNome || !coordenacaoCivelNome || !coordenacaoCriminalNome) {
+      alert('Para a unidade CAMPO GRANDE | 2ª INSTÂNCIA, todos os coordenadores são obrigatórios');
+      return;
+    }
   }
   
   try {
@@ -838,6 +974,11 @@ async function handleUnidadeSubmit(event) {
     const result = await response.json();
     
     if (response.ok) {
+      // Se for a unidade CAMPO GRANDE | 2ª INSTÂNCIA, salvar/atualizar coordenações
+      if (nomeUnidade === 'CAMPO GRANDE | 2ª INSTÂNCIA') {
+        await salvarCoordenacoes(unidadeId || result.unidade.id);
+      }
+      
       alert(result.message);
       closeUnidadeModal();
       loadUnidadesList(); // Recarregar lista
@@ -971,6 +1112,62 @@ async function deleteOrgao(orgaoId) {
     } catch (error) {
       console.error('Erro ao excluir defensoria:', error);
       alert('Erro ao excluir defensoria');
+    }
+  }
+}
+
+// Função para salvar/atualizar coordenações
+async function salvarCoordenacoes(unidadeId) {
+  const coordenacoes = [
+    {
+      tipo: 'ADMINISTRATIVA',
+      nome: document.getElementById('coordenacaoAdminNome').value,
+      email: document.getElementById('coordenacaoAdminEmail').value
+    },
+    {
+      tipo: 'CIVEL',
+      nome: document.getElementById('coordenacaoCivelNome').value,
+      email: document.getElementById('coordenacaoCivelEmail').value
+    },
+    {
+      tipo: 'CRIMINAL',
+      nome: document.getElementById('coordenacaoCriminalNome').value,
+      email: document.getElementById('coordenacaoCriminalEmail').value
+    }
+  ];
+  
+  for (const coordenacao of coordenacoes) {
+    try {
+      // Verificar se já existe coordenação deste tipo
+      const existingResponse = await fetch(`${API_BASE_URL}/coordenacoes/${unidadeId}`);
+      const existingCoordenacoes = await existingResponse.json();
+      
+      const existing = existingCoordenacoes.find(c => c.tipo_coordenacao === coordenacao.tipo);
+      
+      const data = {
+        unidade_id: unidadeId,
+        tipo_coordenacao: coordenacao.tipo,
+        nome_coordenador: coordenacao.nome,
+        email_coordenador: coordenacao.email || null
+      };
+      
+      if (existing) {
+        // Atualizar coordenação existente
+        await fetch(`${API_BASE_URL}/coordenacoes/${existing.id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      } else {
+        // Criar nova coordenação
+        await fetch(`${API_BASE_URL}/coordenacoes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        });
+      }
+    } catch (error) {
+      console.error(`Erro ao salvar coordenação ${coordenacao.tipo}:`, error);
     }
   }
 }
@@ -1136,6 +1333,7 @@ function checkSubstitutoFields() {
   }
 }
 
+
 /* =========================
    INIT
 ========================= */
@@ -1180,3 +1378,84 @@ window.onload = async () => {
   
   console.log('✅ Aplicação iniciada com sucesso!');
 };
+
+/* =========================
+   FUNCIONALIDADE DE COLAPSAR/EXPANDIR UNIDADES
+========================= */
+
+// Função para alternar o estado de colapso de uma unidade
+function toggleUnitCollapse(unidadeId) {
+  const unitBody = document.getElementById(`body-${unidadeId}`);
+  const unitExtra = document.getElementById(`extra-${unidadeId}`);
+  const collapseIcon = document.getElementById(`icon-${unidadeId}`);
+  
+  if (unitBody && unitExtra && collapseIcon) {
+    if (unitBody.style.display === 'none') {
+      // Expandir
+      unitBody.style.display = 'block';
+      unitExtra.style.display = 'block';
+      collapseIcon.textContent = '▼';
+    } else {
+      // Colapsar
+      unitBody.style.display = 'none';
+      unitExtra.style.display = 'none';
+      collapseIcon.textContent = '▶';
+    }
+  }
+}
+
+// Função para colapsar/expandir todas as unidades
+function toggleAllUnits() {
+  const collapseAllBtn = document.getElementById('collapseAllBtn');
+  const collapseAllIcon = document.getElementById('collapseAllIcon');
+  const collapseAllText = document.getElementById('collapseAllText');
+  
+  // Verificar se todas as unidades estão colapsadas
+  const allUnits = document.querySelectorAll('.unit');
+  let allCollapsed = true;
+  
+  allUnits.forEach(unit => {
+    const unitBody = unit.querySelector('.unit-body');
+    const unitExtra = unit.querySelector('.unit-extra');
+    
+    if (unitBody && unitExtra) {
+      if (unitBody.style.display !== 'none' && unitExtra.style.display !== 'none') {
+        allCollapsed = false;
+      }
+    }
+  });
+  
+  // Alternar estado de todas as unidades
+  allUnits.forEach(unit => {
+    const unitBody = unit.querySelector('.unit-body');
+    const unitExtra = unit.querySelector('.unit-extra');
+    const collapseIcon = unit.querySelector('.collapse-icon');
+    
+    if (unitBody && unitExtra && collapseIcon) {
+      if (allCollapsed) {
+        // Expandir todas
+        unitBody.style.display = 'block';
+        unitExtra.style.display = 'block';
+        collapseIcon.textContent = '▼';
+      } else {
+        // Colapsar todas
+        unitBody.style.display = 'none';
+        unitExtra.style.display = 'none';
+        collapseIcon.textContent = '▶';
+      }
+    }
+  });
+  
+  // Atualizar botão
+  if (allCollapsed) {
+    // Mudar para estado "Colapsar Todas"
+    collapseAllBtn.classList.remove('expanded');
+    collapseAllIcon.textContent = '📁';
+    collapseAllText.textContent = 'Colapsar Todas';
+  } else {
+    // Mudar para estado "Expandir Todas"
+    collapseAllBtn.classList.add('expanded');
+    collapseAllIcon.textContent = '📂';
+    collapseAllText.textContent = 'Expandir Todas';
+  }
+}

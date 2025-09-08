@@ -55,7 +55,33 @@ router.get('/unidades', async (req, res) => {
     sql += ' ORDER BY UPPER(u.nome)';
     
     const result = await query(sql, params);
-    res.json(result.rows);
+    const unidades = result.rows;
+    
+    // Para cada unidade, buscar suas coordenações
+    for (let unidade of unidades) {
+      const coordenacoesSql = `
+        SELECT 
+          id,
+          tipo_coordenacao,
+          nome_coordenador,
+          email_coordenador,
+          ativo
+        FROM coordenacoes
+        WHERE unidade_id = $1 AND ativo = true
+        ORDER BY 
+          CASE tipo_coordenacao 
+            WHEN 'ADMINISTRATIVA' THEN 1
+            WHEN 'CIVEL' THEN 2
+            WHEN 'CRIMINAL' THEN 3
+            ELSE 4
+          END
+      `;
+      
+      const coordenacoesResult = await query(coordenacoesSql, [unidade.id]);
+      unidade.coordenacoes = coordenacoesResult.rows;
+    }
+    
+    res.json(unidades);
     
   } catch (error) {
     console.error('Erro ao buscar unidades:', error);
@@ -84,7 +110,31 @@ router.get('/unidades/:id', async (req, res) => {
       return res.status(404).json({ error: 'Unidade não encontrada' });
     }
     
-    res.json(result.rows[0]);
+    const unidade = result.rows[0];
+    
+    // Buscar coordenações da unidade
+    const coordenacoesSql = `
+      SELECT 
+        id,
+        tipo_coordenacao,
+        nome_coordenador,
+        email_coordenador,
+        ativo
+      FROM coordenacoes
+      WHERE unidade_id = $1 AND ativo = true
+      ORDER BY 
+        CASE tipo_coordenacao 
+          WHEN 'ADMINISTRATIVA' THEN 1
+          WHEN 'CIVEL' THEN 2
+          WHEN 'CRIMINAL' THEN 3
+          ELSE 4
+        END
+    `;
+    
+    const coordenacoesResult = await query(coordenacoesSql, [id]);
+    unidade.coordenacoes = coordenacoesResult.rows;
+    
+    res.json(unidade);
     
   } catch (error) {
     console.error('Erro ao buscar unidade:', error);
@@ -552,8 +602,9 @@ router.get('/unidades-completas', async (req, res) => {
     const unidadesResult = await query(unidadesSql, params);
     const unidades = unidadesResult.rows;
     
-    // Para cada unidade, buscar suas defensorias
+    // Para cada unidade, buscar suas defensorias e coordenações
     for (let unidade of unidades) {
+      // Buscar defensorias
       let orgaosSql = `
         SELECT 
           id,
@@ -583,6 +634,28 @@ router.get('/unidades-completas', async (req, res) => {
       
       const orgaosResult = await query(orgaosSql, orgaosParams);
       unidade.orgaos = orgaosResult.rows;
+      
+      // Buscar coordenações
+      const coordenacoesSql = `
+        SELECT 
+          id,
+          tipo_coordenacao,
+          nome_coordenador,
+          email_coordenador,
+          ativo
+        FROM coordenacoes
+        WHERE unidade_id = $1 AND ativo = true
+        ORDER BY 
+          CASE tipo_coordenacao 
+            WHEN 'ADMINISTRATIVA' THEN 1
+            WHEN 'CIVEL' THEN 2
+            WHEN 'CRIMINAL' THEN 3
+            ELSE 4
+          END
+      `;
+      
+      const coordenacoesResult = await query(coordenacoesSql, [unidade.id]);
+      unidade.coordenacoes = coordenacoesResult.rows;
     }
     
     res.json(unidades);
@@ -733,6 +806,222 @@ router.get('/dashboard/distribuicao', async (req, res) => {
     res.json(result.rows);
   } catch (error) {
     console.error('Erro ao buscar distribuição:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// =========================
+// ENDPOINTS DE COORDENAÇÕES
+// =========================
+
+// GET /api/coordenacoes/:unidadeId - Buscar coordenações de uma unidade
+router.get('/coordenacoes/:unidadeId', async (req, res) => {
+  try {
+    const { unidadeId } = req.params;
+    
+    const sql = `
+      SELECT 
+        c.id,
+        c.tipo_coordenacao,
+        c.nome_coordenador,
+        c.email_coordenador,
+        c.ativo,
+        c.created_at,
+        c.updated_at
+      FROM coordenacoes c
+      WHERE c.unidade_id = $1
+      ORDER BY 
+        CASE c.tipo_coordenacao 
+          WHEN 'ADMINISTRATIVA' THEN 1
+          WHEN 'CIVEL' THEN 2
+          WHEN 'CRIMINAL' THEN 3
+          ELSE 4
+        END
+    `;
+    
+    const result = await query(sql, [unidadeId]);
+    res.json(result.rows);
+    
+  } catch (error) {
+    console.error('Erro ao buscar coordenações:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/coordenacao/:id - Buscar coordenação específica por ID
+router.get('/coordenacao/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const sql = `
+      SELECT 
+        c.id,
+        c.unidade_id,
+        c.tipo_coordenacao,
+        c.nome_coordenador,
+        c.email_coordenador,
+        c.ativo,
+        c.created_at,
+        c.updated_at,
+        u.nome as unidade_nome
+      FROM coordenacoes c
+      LEFT JOIN unidades u ON c.unidade_id = u.id
+      WHERE c.id = $1
+    `;
+    
+    const result = await query(sql, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Coordenação não encontrada' });
+    }
+    
+    res.json(result.rows[0]);
+    
+  } catch (error) {
+    console.error('Erro ao buscar coordenação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/coordenacoes - Criar nova coordenação
+router.post('/coordenacoes', async (req, res) => {
+  try {
+    const { 
+      unidade_id, 
+      tipo_coordenacao, 
+      nome_coordenador, 
+      email_coordenador 
+    } = req.body;
+
+    // Validações básicas
+    if (!unidade_id || !tipo_coordenacao || !nome_coordenador) {
+      return res.status(400).json({ 
+        error: 'Unidade, tipo de coordenação e nome do coordenador são obrigatórios' 
+      });
+    }
+
+    // Verificar se já existe coordenação deste tipo para a unidade
+    const existingSql = `
+      SELECT id FROM coordenacoes 
+      WHERE unidade_id = $1 AND tipo_coordenacao = $2 AND ativo = true
+    `;
+    const existing = await query(existingSql, [unidade_id, tipo_coordenacao]);
+    
+    if (existing.rows.length > 0) {
+      return res.status(400).json({ 
+        error: 'Já existe uma coordenação ativa deste tipo para esta unidade' 
+      });
+    }
+
+    const sql = `
+      INSERT INTO coordenacoes (
+        unidade_id, tipo_coordenacao, nome_coordenador, email_coordenador
+      ) VALUES ($1, $2, $3, $4)
+      RETURNING *
+    `;
+
+    const params = [
+      unidade_id, 
+      tipo_coordenacao, 
+      nome_coordenador, 
+      email_coordenador || null
+    ];
+
+    const result = await query(sql, params);
+    
+    res.status(201).json({
+      success: true,
+      message: 'Coordenação criada com sucesso',
+      coordenacao: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao criar coordenação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/coordenacoes/:id - Atualizar coordenação
+router.put('/coordenacoes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { 
+      tipo_coordenacao, 
+      nome_coordenador, 
+      email_coordenador,
+      ativo 
+    } = req.body;
+
+    // Validações básicas
+    if (!tipo_coordenacao || !nome_coordenador) {
+      return res.status(400).json({ 
+        error: 'Tipo de coordenação e nome do coordenador são obrigatórios' 
+      });
+    }
+
+    const sql = `
+      UPDATE coordenacoes SET 
+        tipo_coordenacao = $1, 
+        nome_coordenador = $2, 
+        email_coordenador = $3,
+        ativo = $4,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $5
+      RETURNING *
+    `;
+
+    const params = [
+      tipo_coordenacao, 
+      nome_coordenador, 
+      email_coordenador || null,
+      ativo !== undefined ? ativo : true,
+      id
+    ];
+
+    const result = await query(sql, params);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Coordenação não encontrada' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Coordenação atualizada com sucesso',
+      coordenacao: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao atualizar coordenação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// DELETE /api/coordenacoes/:id - Excluir coordenação (soft delete)
+router.delete('/coordenacoes/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const sql = `
+      UPDATE coordenacoes SET 
+        ativo = false,
+        updated_at = CURRENT_TIMESTAMP
+      WHERE id = $1
+      RETURNING *
+    `;
+    
+    const result = await query(sql, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Coordenação não encontrada' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Coordenação excluída com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('Erro ao excluir coordenação:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

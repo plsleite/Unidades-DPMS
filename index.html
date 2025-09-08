@@ -28,7 +28,7 @@
     <!-- Filtros -->
     <div class="filters">
       <label>
-        <input type="radio" name="filter" value="todos" checked onchange="searchUnit()"> Todos
+        <input type="radio" name="filter" value="todos" checked onchange="searchUnit()"> Todas Defensorias
       </label>
       <label>
         <input type="radio" name="filter" value="vagos" onchange="searchUnit()"> Defensorias Vagas
@@ -36,19 +36,23 @@
       <label>
         <input type="radio" name="filter" value="afastados" onchange="searchUnit()"> Titulares Afastados
       </label>
+      <label class="filter-chip" id="toggleRegionalChip">
+        <input type="checkbox" id="toggleRegionalCheckbox" onchange="toggleRegionalFilters()">
+        <span id="toggleRegionalText">Filtrar por Regional</span>
+        <span id="toggleRegionalIcon">▼</span>
+      </label>
+      <button class="collapse-all-btn" id="collapseAllBtn" onclick="toggleAllUnits()">
+        <span id="collapseAllIcon">📁</span>
+        <span id="collapseAllText">Colapsar Todas</span>
+      </button>
     </div>
 
-            <!-- Filtros por Regional -->
-            <div class="regional-filters">
-              <label class="filter-chip" id="toggleRegionalChip">
-                <input type="checkbox" id="toggleRegionalCheckbox" onchange="toggleRegionalFilters()">
-                <span id="toggleRegionalText">Filtrar por Regional</span>
-                <span id="toggleRegionalIcon">▼</span>
-              </label>
-              <div class="regional-chips" id="regionalChips" style="display: none;">
-                <!-- Chips das regionais serão carregados aqui -->
-              </div>
-            </div>
+    <!-- Filtros por Regional -->
+    <div class="regional-filters">
+      <div class="regional-chips" id="regionalChips" style="display: none;">
+        <!-- Chips das regionais serão carregados aqui -->
+      </div>
+    </div>
 
     <div id="unitList" class="unit-list">
       <!-- Unidades aparecem aqui -->
@@ -190,6 +194,7 @@
           <!-- Lista de defensorias será carregada aqui -->
         </div>
       </div>
+
     </div>
 
     <!-- Modal de Unidade -->
@@ -230,17 +235,17 @@
                 <label class="checkbox-label">
                   <input type="checkbox" id="unidadeTemCoordenador">
                   <span class="checkmark"></span>
-                  Esta unidade possui coordenador
+                  Esta unidade possui coordenação
                 </label>
               </div>
               <div id="coordenadorFields" class="conditional-fields" style="display: none;">
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="unidadeCoordenador">Nome do Coordenador *</label>
+                    <label for="unidadeCoordenador">Nome da Coordenação *</label>
                     <input type="text" id="unidadeCoordenador">
                   </div>
                   <div class="form-group">
-                    <label for="unidadeEmailCoordenador">Email do Coordenador *</label>
+                    <label for="unidadeEmailCoordenador">Email da Coordenação *</label>
                     <input type="email" id="unidadeEmailCoordenador">
                   </div>
                 </div>
@@ -252,18 +257,65 @@
                 <label class="checkbox-label">
                   <input type="checkbox" id="unidadeTemSupervisor">
                   <span class="checkmark"></span>
-                  Esta unidade possui supervisor
+                  Esta unidade possui supervisão
                 </label>
               </div>
               <div id="supervisorFields" class="conditional-fields" style="display: none;">
                 <div class="form-row">
                   <div class="form-group">
-                    <label for="unidadeSupervisor">Nome do Supervisor *</label>
+                    <label for="unidadeSupervisor">Nome da Supervisão *</label>
                     <input type="text" id="unidadeSupervisor">
                   </div>
                   <div class="form-group">
-                    <label for="unidadeEmailSupervisor">Email do Supervisor *</label>
+                    <label for="unidadeEmailSupervisor">Email da Supervisão *</label>
                     <input type="email" id="unidadeEmailSupervisor">
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Coordenações de Segunda Instância (apenas para CAMPO GRANDE | 2ª INSTÂNCIA) -->
+            <div id="coordenacoesSegundaInstancia" class="form-section" style="display: none;">
+              <h4>🎯 Coordenações de Segunda Instância</h4>
+              
+              <div class="coordenacao-group">
+                <h5>Coordenação Administrativa</h5>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="coordenacaoAdminNome">Nome da Coordenação *</label>
+                    <input type="text" id="coordenacaoAdminNome">
+                  </div>
+                  <div class="form-group">
+                    <label for="coordenacaoAdminEmail">Email da Coordenação</label>
+                    <input type="email" id="coordenacaoAdminEmail">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="coordenacao-group">
+                <h5>Coordenação Cível</h5>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="coordenacaoCivelNome">Nome da Coordenação *</label>
+                    <input type="text" id="coordenacaoCivelNome">
+                  </div>
+                  <div class="form-group">
+                    <label for="coordenacaoCivelEmail">Email da Coordenação</label>
+                    <input type="email" id="coordenacaoCivelEmail">
+                  </div>
+                </div>
+              </div>
+              
+              <div class="coordenacao-group">
+                <h5>Coordenação Criminal</h5>
+                <div class="form-row">
+                  <div class="form-group">
+                    <label for="coordenacaoCriminalNome">Nome da Coordenação *</label>
+                    <input type="text" id="coordenacaoCriminalNome">
+                  </div>
+                  <div class="form-group">
+                    <label for="coordenacaoCriminalEmail">Email da Coordenação</label>
+                    <input type="email" id="coordenacaoCriminalEmail">
                   </div>
                 </div>
               </div>
@@ -356,6 +408,7 @@
         </div>
       </div>
     </div>
+
 
   <script>
     // Dashboard Charts and Data Loading
