@@ -770,8 +770,8 @@ router.get('/dashboard/problemas', async (req, res) => {
       ORDER BY 
         CASE 
           WHEN o.vaga = true AND o.titular_afastado = true THEN 1
-          WHEN o.vaga = true THEN 2
-          WHEN o.titular_afastado = true THEN 3
+          WHEN o.titular_afastado = true THEN 2
+          WHEN o.vaga = true THEN 3
         END,
         UPPER(u.nome), UPPER(o.nome)
     `;

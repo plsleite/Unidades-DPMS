@@ -130,20 +130,35 @@
 
         <div class="dashboard-tables">
           <div class="table-container">
-            <h3>🏢 Unidades com Mais Problemas</h3>
+            <h3>📊 Estatísticas por Regional</h3>
             <div class="table-wrapper">
-              <table id="unidadesTable">
+              <table id="regionaisTable">
                 <thead>
                   <tr>
-                    <th>Unidade</th>
-                    <th>Regional</th>
-                    <th>Total Defensorias</th>
-                    <th>Vagas</th>
-                    <th>Afastados</th>
-                    <th>% Problemas</th>
+                    <th onclick="sortTable('regionaisTable', 0)" class="sortable">
+                      Regional <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('regionaisTable', 1)" class="sortable">
+                      Total Defensorias <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('regionaisTable', 2)" class="sortable">
+                      Defensorias Vagas <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('regionaisTable', 3)" class="sortable">
+                      % Vagas <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('regionaisTable', 4)" class="sortable">
+                      Total Titulares <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('regionaisTable', 5)" class="sortable">
+                      Titulares Afastados <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('regionaisTable', 6)" class="sortable">
+                      % Afastados <span class="sort-icon">↕️</span>
+                    </th>
                   </tr>
                 </thead>
-                <tbody id="unidadesTableBody">
+                <tbody id="regionaisTableBody">
                   <!-- Dados serão carregados aqui -->
                 </tbody>
               </table>
@@ -151,17 +166,29 @@
           </div>
 
           <div class="table-container">
-            <h3>⚠️ Defensorias com Problemas</h3>
+            <h3>📋 Listagem das Defensorias Vagas e dos Titulares Afastados</h3>
             <div class="table-wrapper">
               <table id="problemasTable">
                 <thead>
                   <tr>
-                    <th>Defensoria</th>
-                    <th>Unidade</th>
-                    <th>Regional</th>
-                    <th>Status</th>
-                    <th>Titular</th>
-                    <th>Substituto</th>
+                    <th onclick="sortTable('problemasTable', 0)" class="sortable">
+                      Defensoria <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('problemasTable', 1)" class="sortable">
+                      Unidade <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('problemasTable', 2)" class="sortable">
+                      Regional <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('problemasTable', 3)" class="sortable">
+                      Status <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('problemasTable', 4)" class="sortable">
+                      Titular <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('problemasTable', 5)" class="sortable">
+                      Substituto <span class="sort-icon">↕️</span>
+                    </th>
                   </tr>
                 </thead>
                 <tbody id="problemasTableBody">
@@ -430,13 +457,7 @@
         const regionaisResponse = await fetch('/api/dashboard/regionais');
         dashboardData.regionais = await regionaisResponse.json();
         console.log('✅ Dados regionais carregados:', dashboardData.regionais.length, 'regionais');
-
-        // Load units data
-        console.log('🏛️ Carregando dados das unidades...');
-        const unidadesResponse = await fetch('/api/dashboard/unidades');
-        dashboardData.unidades = await unidadesResponse.json();
-        console.log('✅ Dados das unidades carregados:', dashboardData.unidades.length, 'unidades');
-        renderUnidadesTable();
+        renderRegionaisTable();
 
         // Load problems data
         console.log('⚠️ Carregando dados dos problemas...');
@@ -463,34 +484,39 @@
     }
 
 
-    function renderUnidadesTable() {
-      if (!dashboardData.unidades) return;
+    function renderRegionaisTable() {
+      if (!dashboardData.regionais) return;
 
-      const tbody = document.getElementById('unidadesTableBody');
+      const tbody = document.getElementById('regionaisTableBody');
       tbody.innerHTML = '';
 
-      // Sort by problems percentage
-      const sortedUnidades = dashboardData.unidades
-        .map(u => ({
-          ...u,
-          percentProblemas: u.total_defensorias > 0 ? 
-            ((parseInt(u.defensorias_vagas) + parseInt(u.titulares_afastados)) / parseInt(u.total_defensorias) * 100).toFixed(1) : 0
-        }))
-        .sort((a, b) => parseFloat(b.percentProblemas) - parseFloat(a.percentProblemas))
-        .slice(0, 10); // Top 10
-
-      sortedUnidades.forEach(unidade => {
+      dashboardData.regionais.forEach(regional => {
         const row = document.createElement('tr');
-        const percent = parseFloat(unidade.percentProblemas);
-        const percentClass = percent > 30 ? 'percent-alto' : percent > 15 ? 'percent-medio' : 'percent-baixo';
+        
+        // Calcular percentuais
+        const totalDefensorias = parseInt(regional.total_defensorias) || 0;
+        const defensoriasVagas = parseInt(regional.defensorias_vagas) || 0;
+        const titularesAfastados = parseInt(regional.titulares_afastados) || 0;
+        
+        const percentVagas = totalDefensorias > 0 ? 
+          ((defensoriasVagas / totalDefensorias) * 100).toFixed(1) : '0.0';
+        const percentAfastados = totalDefensorias > 0 ? 
+          ((titularesAfastados / totalDefensorias) * 100).toFixed(1) : '0.0';
+        
+        // Classes para destacar percentuais altos
+        const vagasClass = parseFloat(percentVagas) > 20 ? 'percent-alto' : 
+                          parseFloat(percentVagas) > 10 ? 'percent-medio' : 'percent-baixo';
+        const afastadosClass = parseFloat(percentAfastados) > 20 ? 'percent-alto' : 
+                              parseFloat(percentAfastados) > 10 ? 'percent-medio' : 'percent-baixo';
         
         row.innerHTML = `
-          <td>${unidade.nome}</td>
-          <td>Regional ${unidade.regional_numero}</td>
-          <td>${unidade.total_defensorias}</td>
-          <td>${unidade.defensorias_vagas}</td>
-          <td>${unidade.titulares_afastados}</td>
-          <td><span class="percent-problemas ${percentClass}">${unidade.percentProblemas}%</span></td>
+          <td>${regional.nome}</td>
+          <td>${totalDefensorias}</td>
+          <td>${defensoriasVagas}</td>
+          <td><span class="percent-problemas ${vagasClass}">${percentVagas}%</span></td>
+          <td>${totalDefensorias}</td>
+          <td>${titularesAfastados}</td>
+          <td><span class="percent-problemas ${afastadosClass}">${percentAfastados}%</span></td>
         `;
         tbody.appendChild(row);
       });
@@ -502,7 +528,8 @@
       const tbody = document.getElementById('problemasTableBody');
       tbody.innerHTML = '';
 
-      dashboardData.problemas.slice(0, 20).forEach(problema => {
+
+      dashboardData.problemas.forEach(problema => {
         const row = document.createElement('tr');
         const statusClass = problema.status === 'Vaga' ? 'status-vaga' : 
                            problema.status === 'Afastado' ? 'status-afastado' : 'status-ambos';
@@ -546,6 +573,54 @@
         }, 500);
       }
     });
+
+    // Função para ordenar tabelas
+    function sortTable(tableId, columnIndex) {
+      const table = document.getElementById(tableId);
+      const tbody = table.querySelector('tbody');
+      const rows = Array.from(tbody.querySelectorAll('tr'));
+      const headers = table.querySelectorAll('th');
+      
+      // Determinar direção da ordenação
+      const currentHeader = headers[columnIndex];
+      const currentSort = currentHeader.getAttribute('data-sort');
+      const newSort = currentSort === 'asc' ? 'desc' : 'asc';
+      
+      // Limpar indicadores de ordenação de todas as colunas
+      headers.forEach(header => {
+        header.removeAttribute('data-sort');
+        const icon = header.querySelector('.sort-icon');
+        icon.classList.remove('sorted-asc', 'sorted-desc');
+      });
+      
+      // Definir nova ordenação
+      currentHeader.setAttribute('data-sort', newSort);
+      const icon = currentHeader.querySelector('.sort-icon');
+      icon.classList.add(newSort === 'asc' ? 'sorted-asc' : 'sorted-desc');
+      
+      // Ordenar linhas
+      rows.sort((a, b) => {
+        const aValue = a.cells[columnIndex].textContent.trim();
+        const bValue = b.cells[columnIndex].textContent.trim();
+        
+        // Verificar se é numérico (incluindo percentuais)
+        const aNum = parseFloat(aValue.replace('%', ''));
+        const bNum = parseFloat(bValue.replace('%', ''));
+        
+        if (!isNaN(aNum) && !isNaN(bNum)) {
+          // Ordenação numérica
+          return newSort === 'asc' ? aNum - bNum : bNum - aNum;
+        } else {
+          // Ordenação alfabética
+          return newSort === 'asc' 
+            ? aValue.localeCompare(bValue, 'pt-BR', { numeric: true })
+            : bValue.localeCompare(aValue, 'pt-BR', { numeric: true });
+        }
+      });
+      
+      // Reordenar linhas na tabela
+      rows.forEach(row => tbody.appendChild(row));
+    }
   </script>
   <script src="script.js"></script>
 </body>
