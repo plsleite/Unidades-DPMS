@@ -30,10 +30,10 @@
         <input type="radio" name="filter" value="todos" checked onchange="searchUnit()"> Todos
       </label>
       <label>
-        <input type="radio" name="filter" value="vagos" onchange="searchUnit()"> Órgãos vagos
+        <input type="radio" name="filter" value="vagos" onchange="searchUnit()"> Defensorias Vagas
       </label>
       <label>
-        <input type="radio" name="filter" value="afastados" onchange="searchUnit()"> Titulares afastados
+        <input type="radio" name="filter" value="afastados" onchange="searchUnit()"> Titulares Afastados
       </label>
     </div>
 
@@ -82,7 +82,7 @@
       <div class="admin-tabs">
         <button class="tab-btn active" onclick="showAdminTab('dashboard')">📊 Dashboard</button>
         <button class="tab-btn" onclick="showAdminTab('unidades')">🏢 Unidades</button>
-        <button class="tab-btn" onclick="showAdminTab('orgaos')">👥 Órgãos</button>
+        <button class="tab-btn" onclick="showAdminTab('orgaos')">👥 Defensorias</button>
       </div>
 
       <!-- Dashboard -->
@@ -93,11 +93,11 @@
             <span id="totalUnidades" class="stat-number">-</span>
           </div>
           <div class="stat-card">
-            <h3>Total de Órgãos</h3>
+            <h3>Total de Defensorias</h3>
             <span id="totalOrgaos" class="stat-number">-</span>
           </div>
           <div class="stat-card">
-            <h3>Órgãos Vagos</h3>
+            <h3>Defensorias Vagas</h3>
             <span id="orgaosVagos" class="stat-number">-</span>
           </div>
           <div class="stat-card">
@@ -121,11 +121,11 @@
       <!-- Gestão de Órgãos -->
       <div id="adminOrgaos" class="admin-tab-content">
         <div class="admin-section-header">
-          <h3>👥 Gestão de Órgãos</h3>
-          <button onclick="openOrgaoModal()" class="btn-add">+ Novo Órgão</button>
+          <h3>👥 Gestão de Defensorias</h3>
+          <button onclick="openOrgaoModal()" class="btn-add">+ Nova Defensoria</button>
         </div>
         <div id="orgaosList" class="admin-list">
-          <!-- Lista de órgãos será carregada aqui -->
+          <!-- Lista de defensorias será carregada aqui -->
         </div>
       </div>
     </div>
@@ -216,11 +216,11 @@
       </div>
     </div>
 
-    <!-- Modal de Órgão -->
+    <!-- Modal de Defensoria -->
     <div id="orgaoModal" class="modal">
       <div class="modal-content large">
         <div class="modal-header">
-          <h2 id="orgaoModalTitle">Novo Órgão</h2>
+          <h2 id="orgaoModalTitle">Nova Defensoria</h2>
           <span class="close" onclick="closeOrgaoModal()">&times;</span>
         </div>
         <div class="modal-body">
@@ -228,7 +228,7 @@
             <input type="hidden" id="orgaoId">
             <div class="form-row">
               <div class="form-group">
-                <label for="orgaoNome">Nome do Órgão *</label>
+                <label for="orgaoNome">Nome da Defensoria *</label>
                 <input type="text" id="orgaoNome" required>
               </div>
               <div class="form-group">
@@ -243,7 +243,7 @@
               <label class="checkbox-label">
                 <input type="checkbox" id="orgaoVaga">
                 <span class="checkmark"></span>
-                Órgão vago
+                Defensoria vaga
               </label>
             </div>
             

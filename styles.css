@@ -16,7 +16,7 @@ body {
   position: fixed;
   top: 20px;
   right: 20px;
-  z-index: 100;
+  z-index: 50;
   background: linear-gradient(90deg, #4e9b5a, #3a7745);
   color: white;
   border: none;
@@ -354,6 +354,8 @@ body {
   background: #f8f9fa;
   min-height: 100vh;
   padding: 20px;
+  position: relative;
+  z-index: 20;
 }
 
 .admin-header {
@@ -392,6 +394,8 @@ body {
   cursor: pointer;
   font-weight: 500;
   transition: all 0.3s ease;
+  position: relative;
+  z-index: 60;
 }
 
 .btn-logout:hover {

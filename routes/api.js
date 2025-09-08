@@ -52,7 +52,7 @@ router.get('/unidades', async (req, res) => {
       sql += ' WHERE ' + conditions.join(' AND ');
     }
     
-    sql += ' ORDER BY u.nome';
+    sql += ' ORDER BY UPPER(u.nome)';
     
     const result = await query(sql, params);
     res.json(result.rows);
@@ -213,13 +213,13 @@ router.delete('/unidades/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
-    // Verificar se a unidade tem órgãos
+    // Verificar se a unidade tem defensorias
     const orgaosResult = await query('SELECT COUNT(*) as count FROM orgaos WHERE unidade_id = $1', [id]);
     const orgaosCount = parseInt(orgaosResult.rows[0].count);
 
     if (orgaosCount > 0) {
       return res.status(400).json({ 
-        error: 'Não é possível excluir unidade que possui órgãos vinculados',
+        error: 'Não é possível excluir unidade que possui defensorias vinculadas',
         orgaosCount 
       });
     }
@@ -243,10 +243,10 @@ router.delete('/unidades/:id', async (req, res) => {
 });
 
 // =========================
-// ENDPOINTS DE ÓRGÃOS
+// ENDPOINTS DE DEFENSORIAS
 // =========================
 
-// GET /api/orgaos - Listar todos os órgãos
+// GET /api/orgaos - Listar todas as defensorias
 router.get('/orgaos', async (req, res) => {
   try {
     const { unidade_id, vaga, afastado, search } = req.query;
@@ -303,18 +303,18 @@ router.get('/orgaos', async (req, res) => {
       sql += ' WHERE ' + conditions.join(' AND ');
     }
     
-    sql += ' ORDER BY u.nome, o.nome';
+    sql += ' ORDER BY UPPER(u.nome), UPPER(o.nome)';
     
     const result = await query(sql, params);
     res.json(result.rows);
     
   } catch (error) {
-    console.error('Erro ao buscar órgãos:', error);
+    console.error('Erro ao buscar defensorias:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
-// GET /api/orgaos/:id - Buscar órgão específico
+// GET /api/orgaos/:id - Buscar defensoria específica
 router.get('/orgaos/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -331,18 +331,18 @@ router.get('/orgaos/:id', async (req, res) => {
     const result = await query(sql, [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Órgão não encontrado' });
+      return res.status(404).json({ error: 'Defensoria não encontrada' });
     }
     
     res.json(result.rows[0]);
     
   } catch (error) {
-    console.error('Erro ao buscar órgão:', error);
+    console.error('Erro ao buscar defensoria:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
-// POST /api/orgaos - Criar novo órgão
+// POST /api/orgaos - Criar nova defensoria
 router.post('/orgaos', async (req, res) => {
   try {
     const { 
@@ -384,17 +384,17 @@ router.post('/orgaos', async (req, res) => {
     
     res.status(201).json({
       success: true,
-      message: 'Órgão criado com sucesso',
+      message: 'Defensoria criada com sucesso',
       orgao: result.rows[0]
     });
     
   } catch (error) {
-    console.error('Erro ao criar órgão:', error);
+    console.error('Erro ao criar defensoria:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
-// PUT /api/orgaos/:id - Atualizar órgão
+// PUT /api/orgaos/:id - Atualizar defensoria
 router.put('/orgaos/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -443,22 +443,22 @@ router.put('/orgaos/:id', async (req, res) => {
     const result = await query(sql, params);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Órgão não encontrado' });
+      return res.status(404).json({ error: 'Defensoria não encontrada' });
     }
     
     res.json({
       success: true,
-      message: 'Órgão atualizado com sucesso',
+      message: 'Defensoria atualizada com sucesso',
       orgao: result.rows[0]
     });
     
   } catch (error) {
-    console.error('Erro ao atualizar órgão:', error);
+    console.error('Erro ao atualizar defensoria:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
 
-// DELETE /api/orgaos/:id - Excluir órgão
+// DELETE /api/orgaos/:id - Excluir defensoria
 router.delete('/orgaos/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -467,16 +467,16 @@ router.delete('/orgaos/:id', async (req, res) => {
     const result = await query(sql, [id]);
     
     if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Órgão não encontrado' });
+      return res.status(404).json({ error: 'Defensoria não encontrada' });
     }
     
     res.json({
       success: true,
-      message: 'Órgão excluído com sucesso'
+      message: 'Defensoria excluída com sucesso'
     });
     
   } catch (error) {
-    console.error('Erro ao excluir órgão:', error);
+    console.error('Erro ao excluir defensoria:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });
@@ -499,10 +499,10 @@ router.get('/regionais', async (req, res) => {
 });
 
 // =========================
-// ENDPOINT COMBINADO - UNIDADES COM ÓRGÃOS
+// ENDPOINT COMBINADO - UNIDADES COM DEFENSORIAS
 // =========================
 
-// GET /api/unidades-completas - Unidades com seus órgãos
+// GET /api/unidades-completas - Unidades com suas defensorias
 router.get('/unidades-completas', async (req, res) => {
   try {
     const { regional, search, vaga, afastado } = req.query;
@@ -547,12 +547,12 @@ router.get('/unidades-completas', async (req, res) => {
       unidadesSql += ' WHERE ' + conditions.join(' AND ');
     }
     
-    unidadesSql += ' ORDER BY u.nome';
+    unidadesSql += ' ORDER BY UPPER(u.nome)';
     
     const unidadesResult = await query(unidadesSql, params);
     const unidades = unidadesResult.rows;
     
-    // Para cada unidade, buscar seus órgãos
+    // Para cada unidade, buscar suas defensorias
     for (let unidade of unidades) {
       let orgaosSql = `
         SELECT 
@@ -570,7 +570,7 @@ router.get('/unidades-completas', async (req, res) => {
       
       const orgaosParams = [unidade.id];
       
-      // Aplicar filtros aos órgãos
+      // Aplicar filtros às defensorias
       if (vaga === 'true') {
         orgaosSql += ' AND vaga = true';
       }
@@ -579,7 +579,7 @@ router.get('/unidades-completas', async (req, res) => {
         orgaosSql += ' AND titular_afastado = true';
       }
       
-      orgaosSql += ' ORDER BY nome';
+      orgaosSql += ' ORDER BY UPPER(nome)';
       
       const orgaosResult = await query(orgaosSql, orgaosParams);
       unidade.orgaos = orgaosResult.rows;

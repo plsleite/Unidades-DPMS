@@ -27,7 +27,7 @@ async function fetchData() {
     isLoading = true;
     showLoading(true);
     
-    // Buscar unidades completas (com órgãos)
+    // Buscar unidades completas (com defensorias)
     const response = await fetch('/api/unidades-completas');
     
     if (!response.ok) {
@@ -157,7 +157,14 @@ function displayUnits(filteredUnits = unidades, message = "") {
     return;
   }
 
-  filteredUnits.forEach(unidade => {
+  // Ordenar unidades por nome normalizado (sem acentos)
+  const sortedUnits = [...filteredUnits].sort((a, b) => {
+    const nomeA = normalizeText(a.nome);
+    const nomeB = normalizeText(b.nome);
+    return nomeA.localeCompare(nomeB);
+  });
+
+  sortedUnits.forEach(unidade => {
     container.innerHTML += createUnitCard(unidade);
   });
 }
@@ -200,13 +207,13 @@ function searchUnit() {
     filtered = filtered
       .map(u => ({ ...u, orgaos: u.orgaos.filter(o => o.titular.vaga === true) }))
       .filter(u => u.orgaos.length > 0);
-    displayUnits(filtered, "🔎 Exibindo apenas órgãos vagos.");
+    displayUnits(filtered, "🔎 Exibindo apenas Defensorias vagas.");
 
   } else if (selectedFilter === "afastados") {
     filtered = filtered
       .map(u => ({ ...u, orgaos: u.orgaos.filter(o => o.titular.afastado === true) }))
       .filter(u => u.orgaos.length > 0);
-    displayUnits(filtered, "🔎 Exibindo apenas órgãos com titulares afastados.");
+    displayUnits(filtered, "🔎 Exibindo apenas Defensorias com titulares afastados.");
 
   } else {
     displayUnits(filtered);
@@ -405,8 +412,7 @@ function updateAdminUI() {
   if (currentAdmin) {
     console.log('✅ Admin logado, mostrando área administrativa');
     console.log('🔍 currentAdmin.username:', currentAdmin.username);
-    if (adminBtn) adminBtn.textContent = `👤 ${currentAdmin.username}`;
-    if (adminBtn) adminBtn.onclick = logout;
+    if (adminBtn) adminBtn.style.display = 'none'; // Esconder botão admin na área administrativa
     if (adminArea) {
       console.log('🔍 Mostrando adminArea');
       adminArea.style.display = 'block';
@@ -421,8 +427,11 @@ function updateAdminUI() {
     loadAdminData();
   } else {
     console.log('❌ Nenhum admin logado, mostrando área pública');
-    if (adminBtn) adminBtn.textContent = '🔐 Área Administrativa';
-    if (adminBtn) adminBtn.onclick = toggleLoginModal;
+    if (adminBtn) {
+      adminBtn.textContent = '🔐 Área Administrativa';
+      adminBtn.onclick = toggleLoginModal;
+      adminBtn.style.display = 'block'; // Mostrar botão admin na área pública
+    }
     if (adminArea) adminArea.style.display = 'none';
     if (container) container.style.display = 'block';
   }
@@ -434,7 +443,7 @@ async function loadAdminData() {
     // Carregar estatísticas do dashboard
     await loadDashboardStats();
     
-    // Carregar listas de unidades e órgãos
+    // Carregar listas de unidades e defensorias
     await loadUnidadesList();
     await loadOrgaosList();
   } catch (error) {
@@ -500,7 +509,7 @@ async function loadUnidadesList() {
   }
 }
 
-// Carregar lista de órgãos para administração
+// Carregar lista de defensorias para administração
 async function loadOrgaosList() {
   try {
     const response = await fetch(`${API_BASE_URL}/orgaos`);
@@ -527,7 +536,7 @@ async function loadOrgaosList() {
       orgaosList.appendChild(orgaoDiv);
     });
   } catch (error) {
-    console.error('Erro ao carregar órgãos:', error);
+    console.error('Erro ao carregar defensorias:', error);
   }
 }
 
@@ -726,18 +735,18 @@ async function handleUnidadeSubmit(event) {
   }
 }
 
-// Funções de modal de órgão
+// Funções de modal de defensoria
 function openOrgaoModal(orgaoId = null) {
   const modal = document.getElementById('orgaoModal');
   const title = document.getElementById('orgaoModalTitle');
   const form = document.getElementById('orgaoForm');
   
   if (orgaoId) {
-    title.textContent = 'Editar Órgão';
-    // Carregar dados do órgão para edição
+    title.textContent = 'Editar Defensoria';
+    // Carregar dados da defensoria para edição
     loadOrgaoData(orgaoId);
   } else {
-    title.textContent = 'Novo Órgão';
+    title.textContent = 'Nova Defensoria';
     form.reset();
   }
   
@@ -771,12 +780,12 @@ async function loadOrgaoData(orgaoId) {
     const orgao = await response.json();
     
     if (response.ok) {
-      // Preencher formulário com dados do órgão
+      // Preencher formulário com dados da defensoria
       document.getElementById('orgaoId').value = orgao.id;
       document.getElementById('orgaoNome').value = orgao.nome;
       document.getElementById('orgaoUnidade').value = orgao.unidade_id;
       
-      // Órgão vago
+      // Defensoria vaga
       const isVaga = orgao.vaga || false;
       document.getElementById('orgaoVaga').checked = isVaga;
       
@@ -815,12 +824,12 @@ async function loadOrgaoData(orgaoId) {
       document.getElementById('orgaoSubstitutoNome').value = orgao.substituto_nome || '';
       document.getElementById('orgaoSubstitutoEmail').value = orgao.substituto_email || '';
     } else {
-      console.error('Erro ao carregar órgão:', orgao.error);
-      alert('Erro ao carregar dados do órgão');
+      console.error('Erro ao carregar defensoria:', orgao.error);
+      alert('Erro ao carregar dados da defensoria');
     }
   } catch (error) {
-    console.error('Erro ao carregar órgão:', error);
-    alert('Erro ao carregar dados do órgão');
+    console.error('Erro ao carregar defensoria:', error);
+    alert('Erro ao carregar dados da defensoria');
   }
 }
 
@@ -829,7 +838,7 @@ function editOrgao(orgaoId) {
 }
 
 async function deleteOrgao(orgaoId) {
-  if (confirm('Tem certeza que deseja excluir este órgão?')) {
+  if (confirm('Tem certeza que deseja excluir esta defensoria?')) {
     try {
       const response = await fetch(`${API_BASE_URL}/orgaos/${orgaoId}`, {
         method: 'DELETE'
@@ -838,19 +847,19 @@ async function deleteOrgao(orgaoId) {
       const result = await response.json();
       
       if (response.ok) {
-        alert('Órgão excluído com sucesso!');
+        alert('Defensoria excluída com sucesso!');
         loadOrgaosList(); // Recarregar lista
       } else {
-        alert(`Erro ao excluir órgão: ${result.error}`);
+        alert(`Erro ao excluir defensoria: ${result.error}`);
       }
     } catch (error) {
-      console.error('Erro ao excluir órgão:', error);
-      alert('Erro ao excluir órgão');
+      console.error('Erro ao excluir defensoria:', error);
+      alert('Erro ao excluir defensoria');
     }
   }
 }
 
-// Função para processar formulário de órgão
+// Função para processar formulário de defensoria
 async function handleOrgaoSubmit(event) {
   event.preventDefault();
   
@@ -871,17 +880,17 @@ async function handleOrgaoSubmit(event) {
   
   // Validações
   if (!formData.nome || !formData.unidade_id) {
-    alert('Nome do órgão e unidade são obrigatórios');
+    alert('Nome da defensoria e unidade são obrigatórios');
     return;
   }
   
   if (!isVaga && (!formData.titular_nome || !formData.titular_email)) {
-    alert('Nome e email do titular são obrigatórios quando o órgão não está vago');
+    alert('Nome e email do titular são obrigatórios quando a defensoria não está vaga');
     return;
   }
   
   if ((isVaga || isTitularAfastado) && (!formData.substituto_nome || !formData.substituto_email)) {
-    alert('Nome e email do substituto são obrigatórios quando o órgão está vago ou o titular está afastado');
+    alert('Nome e email do substituto são obrigatórios quando a defensoria está vaga ou o titular está afastado');
     return;
   }
   
@@ -908,8 +917,8 @@ async function handleOrgaoSubmit(event) {
       alert(`Erro: ${result.error}`);
     }
   } catch (error) {
-    console.error('Erro ao salvar órgão:', error);
-    alert('Erro ao salvar órgão');
+    console.error('Erro ao salvar defensoria:', error);
+    alert('Erro ao salvar defensoria');
   }
 }
 
@@ -955,7 +964,7 @@ function setupConditionalFields() {
     });
   }
   
-  // Checkbox de órgão vago
+  // Checkbox de defensoria vaga
   const vagaCheckbox = document.getElementById('orgaoVaga');
   const titularFields = document.getElementById('titularFields');
   const substitutoFields = document.getElementById('substitutoFields');
@@ -1026,7 +1035,7 @@ window.onload = async () => {
   // Configurar formulário de unidade
   document.getElementById('unidadeForm').addEventListener('submit', handleUnidadeSubmit);
   
-  // Configurar formulário de órgão
+  // Configurar formulário de defensoria
   document.getElementById('orgaoForm').addEventListener('submit', handleOrgaoSubmit);
   
   // Configurar checkboxes para campos condicionais
