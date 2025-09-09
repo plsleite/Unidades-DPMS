@@ -334,12 +334,20 @@ body {
 /* ===== Destaques ===== */
 .afastado,
 .vaga {
-  color: #b00020;
   font-weight: bold;
-  background-color: #fdeaea;
   padding: 2px 6px;
   border-radius: 6px;
   font-size: 13px;
+}
+
+.afastado {
+  color: #8b5a00;
+  background-color: #fff3cd;
+}
+
+.vaga {
+  color: #b00020;
+  background-color: #fdeaea;
 }
 
 .search-message {

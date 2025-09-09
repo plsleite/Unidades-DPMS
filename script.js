@@ -116,7 +116,7 @@ function createUnitCard(unidade) {
       <div class="unit-body" id="body-${unidade.id}">
         <p><strong>Endereço:</strong> ${unidade.endereco}</p>
         <p><strong>Telefone:</strong> ${unidade.telefone}</p>
-        ${unidade.regional ? `<p><strong>Regional:</strong> ${unidade.regional.nome}</p>` : ''}
+        ${unidade.regional && unidade.nome !== 'CAMPO GRANDE | 2ª INSTÂNCIA' ? `<p><strong>Regional:</strong> ${unidade.regional.nome}</p>` : ''}
         ${unidade.coordenador && unidade.coordenador.trim() !== '' ? `<p><strong>Coordenação:</strong> ${unidade.coordenador}</p>` : ''}
         ${unidade.supervisor && unidade.supervisor.trim() !== '' ? `<p><strong>Supervisão:</strong> ${unidade.supervisor}</p>` : ''}
         
@@ -132,17 +132,19 @@ function createUnitCard(unidade) {
   `;
 
   unidade.orgaos.forEach(orgao => {
+    const isVaga = orgao.titular.nome === "Vaga";
+    
     card += `
       <div class="orgao">
-        <p><strong>${orgao.nome}</strong></p>
-        <p><strong>Titular:</strong> 
-          ${orgao.titular.nome === "Vaga" ? '<span class="vaga">Vaga</span>' : orgao.titular.nome}
-          ${orgao.titular.afastado ? ' <span class="afastado">Afastado</span>' : ""}
-        </p>
+        <p><strong>${orgao.nome}${isVaga ? ' <span class="vaga">Defensoria Vaga</span>' : ''}</strong></p>
     `;
 
-    if (orgao.titular.email) {
-      card += `<p><strong>E-mail:</strong> ${orgao.titular.email}</p>`;
+    if (!isVaga) {
+      card += `<p><strong>Titular:</strong> ${orgao.titular.nome}${orgao.titular.afastado ? ' <span class="afastado">Afastado das Funções</span>' : ""}</p>`;
+      
+      if (orgao.titular.email) {
+        card += `<p><strong>E-mail:</strong> ${orgao.titular.email}</p>`;
+      }
     }
 
     if (orgao.substituto) {
@@ -218,6 +220,8 @@ function toggleRegionalFilters() {
   const chipsContainer = document.getElementById('regionalChips');
   const toggleCheckbox = document.getElementById('toggleRegionalCheckbox');
   const toggleText = document.getElementById('toggleRegionalText');
+  
+  if (!chipsContainer || !toggleCheckbox || !toggleText) return;
 
   if (toggleCheckbox.checked) {
     // Mostrar filtros
@@ -275,7 +279,10 @@ function clearRegionalFilters() {
 function searchUnit() {
   if (isLoading) return; // Não executar se ainda estiver carregando
   
-  const rawInput = document.getElementById("searchInput").value.trim();
+  const searchInput = document.getElementById("searchInput");
+  if (!searchInput) return; // Não executar se o elemento não existir
+  
+  const rawInput = searchInput.value.trim();
   const query = normalizeText(rawInput);
   const selectedFilter = document.querySelector("input[name='filter']:checked").value;
 
@@ -622,7 +629,7 @@ async function loadUnidadesList() {
       unidadeDiv.innerHTML = `
         <div class="admin-item-info">
           <h4>${unidade.nome}</h4>
-          <p>${unidade.endereco} • ${unidade.regional_nome || 'Sem regional'}</p>
+          <p>${unidade.endereco}${unidade.nome !== 'CAMPO GRANDE | 2ª INSTÂNCIA' ? ` • ${unidade.regional_nome || 'Sem regional'}` : ''}</p>
           <p>Coordenação: ${unidade.coordenador || 'Não informado'}</p>
         </div>
         <div class="admin-item-actions">
@@ -706,6 +713,10 @@ function openUnidadeModal(unidadeId = null) {
     document.getElementById('supervisorFields').style.display = 'none';
     document.getElementById('coordenacoesSegundaInstancia').style.display = 'none';
     
+    // Mostrar campo de regional para nova unidade
+    document.getElementById('unidadeRegional').style.display = 'block';
+    document.querySelector('label[for="unidadeRegional"]').style.display = 'block';
+    
     // Mostrar seções de coordenador e supervisor para nova unidade
     const coordenadorSection = document.getElementById('unidadeTemCoordenador').parentElement.parentElement.parentElement;
     const supervisorSection = document.getElementById('unidadeTemSupervisor').parentElement.parentElement.parentElement;
@@ -749,10 +760,20 @@ async function loadUnidadeData(unidadeId) {
       document.getElementById('unidadeNome').value = unidade.nome;
       document.getElementById('unidadeEndereco').value = unidade.endereco;
       document.getElementById('unidadeTelefone').value = unidade.telefone || '';
-      document.getElementById('unidadeRegional').value = unidade.regional_id || '';
       
       // Coordenador e Supervisor (ocultar para CAMPO GRANDE | 2ª INSTÂNCIA)
       const isSegundaInstancia = unidade.nome === 'CAMPO GRANDE | 2ª INSTÂNCIA';
+      
+      // Regional (ocultar para CAMPO GRANDE | 2ª INSTÂNCIA)
+      if (isSegundaInstancia) {
+        document.getElementById('unidadeRegional').value = '';
+        document.getElementById('unidadeRegional').style.display = 'none';
+        document.querySelector('label[for="unidadeRegional"]').style.display = 'none';
+      } else {
+        document.getElementById('unidadeRegional').value = unidade.regional_id || '';
+        document.getElementById('unidadeRegional').style.display = 'block';
+        document.querySelector('label[for="unidadeRegional"]').style.display = 'block';
+      }
       
       if (isSegundaInstancia) {
         // Ocultar seções inteiras de coordenador e supervisor
@@ -926,8 +947,8 @@ async function handleUnidadeSubmit(event) {
   }
   
   // Validações
-  if (!formData.nome || !formData.endereco || !formData.telefone || !formData.regional_id) {
-    alert('Nome, endereço, telefone e regional são obrigatórios');
+  if (!formData.nome || !formData.endereco || !formData.telefone || (!isSegundaInstancia && !formData.regional_id)) {
+    alert(isSegundaInstancia ? 'Nome, endereço e telefone são obrigatórios' : 'Nome, endereço, telefone e regional são obrigatórios');
     return;
   }
   
@@ -1017,7 +1038,7 @@ function closeOrgaoModal() {
 
 function loadUnidadesForSelect() {
   // Carregar unidades para o select
-  fetch(`${API_BASE_URL}/unidades`)
+  return fetch(`${API_BASE_URL}/unidades`)
     .then(response => response.json())
     .then(unidades => {
       const select = document.getElementById('orgaoUnidade');
@@ -1040,6 +1061,9 @@ async function loadOrgaoData(orgaoId) {
       // Preencher formulário com dados da defensoria
       document.getElementById('orgaoId').value = orgao.id;
       document.getElementById('orgaoNome').value = orgao.nome;
+      
+      // Aguardar o carregamento das unidades antes de definir o valor
+      await loadUnidadesForSelect();
       document.getElementById('orgaoUnidade').value = orgao.unidade_id;
       
       // Defensoria vaga
