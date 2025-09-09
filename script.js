@@ -2,6 +2,9 @@
    FUNÇÃO DE NORMALIZAÇÃO
 ========================= */
 function normalizeText(text) {
+  if (!text || typeof text !== 'string') {
+    return '';
+  }
   return text
     .normalize("NFD")                // separa acentos
     .replace(/[\u0300-\u036f]/g, "") // remove acentos
@@ -17,6 +20,11 @@ let regionais = []; // Array vazio - será preenchido pela API
 let isLoading = false;
 let currentAdmin = null; // Dados do administrador logado
 let selectedRegionais = []; // Array para armazenar regionais selecionadas
+
+// Dados originais para busca
+let originalRegionais = [];
+let originalUnidades = [];
+let originalOrgaos = [];
 
 /* =========================
    FUNÇÕES DE API
@@ -620,28 +628,35 @@ async function loadUnidadesList() {
     const response = await fetch(`${API_BASE_URL}/unidades-completas`);
     const unidadesData = await response.json();
     
-    const unidadesList = document.getElementById('unidadesList');
-    unidadesList.innerHTML = '';
-    
-    unidadesData.forEach(unidade => {
-      const unidadeDiv = document.createElement('div');
-      unidadeDiv.className = 'admin-item';
-      unidadeDiv.innerHTML = `
-        <div class="admin-item-info">
-          <h4>${unidade.nome}</h4>
-          <p>${unidade.endereco}${unidade.nome !== 'CAMPO GRANDE | 2ª INSTÂNCIA' ? ` • ${unidade.regional_nome || 'Sem regional'}` : ''}</p>
-          <p>Coordenação: ${unidade.coordenador || 'Não informado'}</p>
-        </div>
-        <div class="admin-item-actions">
-          <button class="btn-edit" onclick="editUnidade(${unidade.id})">Editar</button>
-          <button class="btn-delete" onclick="deleteUnidade(${unidade.id})">Excluir</button>
-        </div>
-      `;
-      unidadesList.appendChild(unidadeDiv);
-    });
+    unidades = unidadesData;
+    originalUnidades = [...unidadesData];
+    renderUnidadesList(unidades);
   } catch (error) {
     console.error('Erro ao carregar unidades:', error);
   }
+}
+
+// Função para renderizar lista de unidades
+function renderUnidadesList(unidadesData) {
+  const unidadesList = document.getElementById('unidadesList');
+  unidadesList.innerHTML = '';
+  
+  unidadesData.forEach(unidade => {
+    const unidadeDiv = document.createElement('div');
+    unidadeDiv.className = 'admin-item';
+    unidadeDiv.innerHTML = `
+      <div class="admin-item-info">
+        <h4>${unidade.nome}</h4>
+        <p>${unidade.endereco}${unidade.nome !== 'CAMPO GRANDE | 2ª INSTÂNCIA' ? ` • ${unidade.regional_nome || 'Sem regional'}` : ''}</p>
+        <p>Coordenação: ${unidade.coordenador || 'Não informado'}</p>
+      </div>
+      <div class="admin-item-actions">
+        <button class="btn-edit" onclick="editUnidade(${unidade.id})">Editar</button>
+        <button class="btn-delete" onclick="deleteUnidade(${unidade.id})">Excluir</button>
+      </div>
+    `;
+    unidadesList.appendChild(unidadeDiv);
+  });
 }
 
 // Carregar lista de defensorias para administração
@@ -650,29 +665,36 @@ async function loadOrgaosList() {
     const response = await fetch(`${API_BASE_URL}/orgaos`);
     const orgaosData = await response.json();
     
-    const orgaosList = document.getElementById('orgaosList');
-    orgaosList.innerHTML = '';
-    
-    orgaosData.forEach(orgao => {
-      const orgaoDiv = document.createElement('div');
-      orgaoDiv.className = 'admin-item';
-      orgaoDiv.innerHTML = `
-        <div class="admin-item-info">
-          <h4>${orgao.nome}</h4>
-          <p>Unidade: ${orgao.unidade_nome || 'Não informada'}</p>
-          <p>Titular: ${orgao.titular_nome || 'Não informado'}</p>
-          <p>Status: ${orgao.vaga ? 'Vago' : (orgao.titular_afastado ? 'Titular afastado' : 'Ativo')}</p>
-        </div>
-        <div class="admin-item-actions">
-          <button class="btn-edit" onclick="editOrgao(${orgao.id})">Editar</button>
-          <button class="btn-delete" onclick="deleteOrgao(${orgao.id})">Excluir</button>
-        </div>
-      `;
-      orgaosList.appendChild(orgaoDiv);
-    });
+    orgaos = orgaosData;
+    originalOrgaos = [...orgaosData];
+    renderOrgaosList(orgaos);
   } catch (error) {
     console.error('Erro ao carregar defensorias:', error);
   }
+}
+
+// Função para renderizar lista de defensorias
+function renderOrgaosList(orgaosData) {
+  const orgaosList = document.getElementById('orgaosList');
+  orgaosList.innerHTML = '';
+  
+  orgaosData.forEach(orgao => {
+    const orgaoDiv = document.createElement('div');
+    orgaoDiv.className = 'admin-item';
+    orgaoDiv.innerHTML = `
+      <div class="admin-item-info">
+        <h4>${orgao.nome}</h4>
+        <p>Unidade: ${orgao.unidade_nome || 'Não informada'}</p>
+        <p>Titular: ${orgao.titular_nome || 'Não informado'}</p>
+        <p>Status: ${orgao.vaga ? 'Vago' : (orgao.titular_afastado ? 'Titular afastado' : 'Ativo')}</p>
+      </div>
+      <div class="admin-item-actions">
+        <button class="btn-edit" onclick="editOrgao(${orgao.id})">Editar</button>
+        <button class="btn-delete" onclick="deleteOrgao(${orgao.id})">Excluir</button>
+      </div>
+    `;
+    orgaosList.appendChild(orgaoDiv);
+  });
 }
 
 // Funções de navegação entre abas
@@ -690,10 +712,20 @@ function showAdminTab(tabName) {
     loadDashboardData();
   } else if (tabName === 'unidades') {
     loadUnidadesList();
+    // Configurar eventos de busca após o DOM estar pronto
+    setTimeout(() => {
+      setupSearchEvents();
+    }, 100);
   } else if (tabName === 'orgaos') {
     loadOrgaosList();
+    setTimeout(() => {
+      setupSearchEvents();
+    }, 100);
   } else if (tabName === 'regionais') {
     loadRegionaisList();
+    setTimeout(() => {
+      setupSearchEvents();
+    }, 100);
   }
 }
 
@@ -1579,12 +1611,14 @@ async function handleRegionalSubmit(event) {
 async function loadRegionaisList() {
   try {
     const response = await fetch(`${API_BASE_URL}/regionais`);
-    const regionais = await response.json();
+    const regionaisData = await response.json();
     
     if (response.ok) {
+      regionais = regionaisData;
+      originalRegionais = [...regionaisData];
       renderRegionaisList(regionais);
     } else {
-      console.error('Erro ao carregar regionais:', regionais.error);
+      console.error('Erro ao carregar regionais:', regionaisData.error);
     }
   } catch (error) {
     console.error('Erro ao carregar regionais:', error);
@@ -1603,7 +1637,7 @@ function renderRegionaisList(regionais) {
     const regionalDiv = document.createElement('div');
     regionalDiv.className = 'admin-item';
     regionalDiv.innerHTML = `
-      <div class="admin-item-content">
+      <div class="admin-item-info">
         <h4>${regional.nome}</h4>
         <p><strong>Número:</strong> ${regional.numero}</p>
         <p><strong>Unidades:</strong> ${regional.total_unidades}</p>
@@ -1661,7 +1695,7 @@ function toggleTable(tableId) {
   const tableWrapper = document.getElementById(tableId);
   const title = document.querySelector(`[onclick="toggleTable('${tableId}')"]`);
   const icon = title.querySelector('.collapse-icon');
-  
+
   if (tableWrapper.style.display === 'none' || tableWrapper.style.display === '') {
     // Expandir tabela
     tableWrapper.style.display = 'block';
@@ -1672,5 +1706,96 @@ function toggleTable(tableId) {
     tableWrapper.style.display = 'none';
     icon.classList.remove('expanded');
     icon.textContent = '▼';
+  }
+}
+
+/* =========================
+   FUNÇÕES DE BUSCA
+========================= */
+
+
+// Função de busca para regionais
+function searchRegionais(query) {
+  if (!query.trim()) {
+    regionais = [...originalRegionais];
+  } else {
+    const normalizedQuery = normalizeText(query);
+    regionais = originalRegionais.filter(regional => 
+      normalizeText(regional.nome).includes(normalizedQuery) ||
+      regional.numero.toString().includes(normalizedQuery) ||
+      regional.total_unidades.toString().includes(normalizedQuery) ||
+      regional.total_defensorias.toString().includes(normalizedQuery) ||
+      regional.defensorias_vagas.toString().includes(normalizedQuery) ||
+      regional.titulares_afastados.toString().includes(normalizedQuery)
+    );
+  }
+  renderRegionaisList(regionais);
+}
+
+// Função de busca para unidades
+function searchUnidades(query) {
+  if (!query.trim()) {
+    unidades = [...originalUnidades];
+  } else {
+    const normalizedQuery = normalizeText(query);
+    unidades = originalUnidades.filter(unidade => {
+      const nomeMatch = normalizeText(unidade.nome).includes(normalizedQuery);
+      const regionalMatch = normalizeText(unidade.regional_nome).includes(normalizedQuery);
+      const enderecoMatch = normalizeText(unidade.endereco).includes(normalizedQuery);
+      const telefoneMatch = normalizeText(unidade.telefone).includes(normalizedQuery);
+      const coordenadorMatch = unidade.coordenador && normalizeText(unidade.coordenador).includes(normalizedQuery);
+      const supervisorMatch = unidade.supervisor && normalizeText(unidade.supervisor).includes(normalizedQuery);
+      
+      return nomeMatch || regionalMatch || enderecoMatch || telefoneMatch || coordenadorMatch || supervisorMatch;
+    });
+  }
+  renderUnidadesList(unidades);
+}
+
+// Função de busca para defensorias
+function searchOrgaos(query) {
+  if (!query.trim()) {
+    orgaos = [...originalOrgaos];
+  } else {
+    const normalizedQuery = normalizeText(query);
+    orgaos = originalOrgaos.filter(orgao => 
+      normalizeText(orgao.nome).includes(normalizedQuery) ||
+      normalizeText(orgao.unidade_nome).includes(normalizedQuery) ||
+      (orgao.titular_nome && normalizeText(orgao.titular_nome).includes(normalizedQuery)) ||
+      (orgao.titular_email && normalizeText(orgao.titular_email).includes(normalizedQuery)) ||
+      (orgao.substituto_nome && normalizeText(orgao.substituto_nome).includes(normalizedQuery)) ||
+      (orgao.substituto_email && normalizeText(orgao.substituto_email).includes(normalizedQuery))
+    );
+  }
+  renderOrgaosList(orgaos);
+}
+
+// Configurar eventos de busca
+function setupSearchEvents() {
+  // Busca de regionais
+  const regionaisSearch = document.getElementById('regionaisSearch');
+  if (regionaisSearch && !regionaisSearch.hasAttribute('data-listener-added')) {
+    regionaisSearch.addEventListener('input', (e) => {
+      searchRegionais(e.target.value);
+    });
+    regionaisSearch.setAttribute('data-listener-added', 'true');
+  }
+
+  // Busca de unidades
+  const unidadesSearch = document.getElementById('unidadesSearch');
+  if (unidadesSearch && !unidadesSearch.hasAttribute('data-listener-added')) {
+    unidadesSearch.addEventListener('input', (e) => {
+      searchUnidades(e.target.value);
+    });
+    unidadesSearch.setAttribute('data-listener-added', 'true');
+  }
+
+  // Busca de defensorias
+  const orgaosSearch = document.getElementById('orgaosSearch');
+  if (orgaosSearch && !orgaosSearch.hasAttribute('data-listener-added')) {
+    orgaosSearch.addEventListener('input', (e) => {
+      searchOrgaos(e.target.value);
+    });
+    orgaosSearch.setAttribute('data-listener-added', 'true');
   }
 }

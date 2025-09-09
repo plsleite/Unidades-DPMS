@@ -270,7 +270,13 @@
       <div id="adminUnidades" class="admin-tab-content">
         <div class="admin-section-header">
           <h3>🏢 Gestão de Unidades</h3>
-          <button onclick="openUnidadeModal()" class="btn-add">+ Nova Unidade</button>
+          <div class="admin-header-actions">
+            <div class="search-container">
+              <input type="text" id="unidadesSearch" placeholder="Buscar unidades..." class="search-input">
+              <span class="search-icon">🔍</span>
+            </div>
+            <button onclick="openUnidadeModal()" class="btn-add">+ Nova Unidade</button>
+          </div>
         </div>
         <div id="unidadesList" class="admin-list">
           <!-- Lista de unidades será carregada aqui -->
@@ -281,7 +287,13 @@
       <div id="adminOrgaos" class="admin-tab-content">
         <div class="admin-section-header">
           <h3>👥 Gestão de Defensorias</h3>
-          <button onclick="openOrgaoModal()" class="btn-add">+ Nova Defensoria</button>
+          <div class="admin-header-actions">
+            <div class="search-container">
+              <input type="text" id="orgaosSearch" placeholder="Buscar defensorias..." class="search-input">
+              <span class="search-icon">🔍</span>
+            </div>
+            <button onclick="openOrgaoModal()" class="btn-add">+ Nova Defensoria</button>
+          </div>
         </div>
         <div id="orgaosList" class="admin-list">
           <!-- Lista de defensorias será carregada aqui -->
@@ -292,7 +304,13 @@
       <div id="adminRegionais" class="admin-tab-content">
         <div class="admin-section-header">
           <h3>🌍 Gestão de Regionais</h3>
-          <button onclick="openRegionalModal()" class="btn-add">+ Nova Regional</button>
+          <div class="admin-header-actions">
+            <div class="search-container">
+              <input type="text" id="regionaisSearch" placeholder="Buscar regionais..." class="search-input">
+              <span class="search-icon">🔍</span>
+            </div>
+            <button onclick="openRegionalModal()" class="btn-add">+ Nova Regional</button>
+          </div>
         </div>
         <div id="regionaisList" class="admin-list">
           <!-- Lista de regionais será carregada aqui -->
