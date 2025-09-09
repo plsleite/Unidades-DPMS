@@ -2,12 +2,20 @@ body {
   margin: 0;
   font-family: 'Roboto', Arial, sans-serif;
   background-color: #f4f6f4;
+  overflow-x: hidden;
+}
+
+* {
+  box-sizing: border-box;
 }
 
 .container {
   max-width: 1000px;
   margin: 40px auto;
   padding: 20px;
+  width: 100%;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ===== Header Admin ===== */
@@ -545,6 +553,8 @@ body {
   padding: 20px;
   position: relative;
   z-index: 20;
+  max-width: 100vw;
+  overflow-x: hidden;
 }
 
 .admin-header {
@@ -632,8 +642,8 @@ body {
 .dashboard-stats {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-  gap: 20px;
-  margin-bottom: 30px;
+  gap: 15px;
+  margin-bottom: 1.2rem;
 }
 
 .stat-card {
@@ -849,6 +859,8 @@ body {
   
   .dashboard-stats {
     grid-template-columns: 1fr;
+    gap: 12px;
+    margin-bottom: 15px;
   }
   
   .admin-section-header {
@@ -1016,26 +1028,57 @@ body {
 .dashboard-tables {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 2rem;
-  margin: 2rem 0;
+  gap: 1.2rem;
+  margin: 1.2rem 0;
   width: 100%;
   max-width: 100%;
+  overflow-x: hidden;
 }
 
 .table-container {
   background: white;
-  padding: 2rem;
+  padding: 1.2rem;
   border-radius: 12px;
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   border: 1px solid #e9ecef;
-  margin-bottom: 2rem;
+  margin-bottom: 1.2rem;
   width: 100%;
   max-width: 100%;
   overflow: hidden;
+  box-sizing: border-box;
+}
+
+/* Estilos para títulos colapsáveis */
+.collapsible-title {
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.2s ease;
+  padding: 1rem;
+  margin: 0;
+  background: #f8f9fa;
+  border-bottom: 1px solid #dee2e6;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-radius: 12px 12px 0 0;
+}
+
+.collapsible-title:hover {
+  background: #e9ecef;
+}
+
+.collapse-icon {
+  font-size: 0.8rem;
+  transition: transform 0.2s ease;
+  color: #6c757d;
+}
+
+.collapse-icon.expanded {
+  transform: rotate(180deg);
 }
 
 .table-container h3 {
-  margin: 0 0 1.5rem 0;
+  margin: 0 0 1rem 0;
   color: #2c3e50;
   font-size: 1.2rem;
   font-weight: 600;
@@ -1050,7 +1093,58 @@ body {
   border: 1px solid #e9ecef;
   width: 100%;
   max-width: 100%;
+  -webkit-overflow-scrolling: touch;
 }
+
+/* ===== Tabelas Específicas - Defensorias Vagas e Titulares Afastados ===== */
+#vagasTable, #afastadosTable {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+  table-layout: fixed; /* Layout fixo para melhor controle */
+  min-width: 100%;
+}
+
+#vagasTable th, #afastadosTable th {
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+  padding: 12px 8px;
+  text-align: left;
+  border-bottom: 2px solid #dee2e6;
+  white-space: nowrap;
+  font-size: 0.9rem;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+#vagasTable td, #afastadosTable td {
+  padding: 10px 8px;
+  border-bottom: 1px solid #e9ecef;
+  vertical-align: middle;
+  font-size: 0.85rem;
+  line-height: 1.4;
+  word-wrap: break-word;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+#vagasTable tbody tr:hover, #afastadosTable tbody tr:hover {
+  background-color: #f8f9fa;
+}
+
+/* Larguras específicas para as colunas das tabelas de vagas e afastados */
+#vagasTable th:nth-child(1), #vagasTable td:nth-child(1) { width: 20%; } /* Regional */
+#vagasTable th:nth-child(2), #vagasTable td:nth-child(2) { width: 30%; } /* Unidade */
+#vagasTable th:nth-child(3), #vagasTable td:nth-child(3) { width: 30%; } /* Defensoria */
+#vagasTable th:nth-child(4), #vagasTable td:nth-child(4) { width: 20%; } /* Substituto */
+
+#afastadosTable th:nth-child(1), #afastadosTable td:nth-child(1) { width: 18%; } /* Regional */
+#afastadosTable th:nth-child(2), #afastadosTable td:nth-child(2) { width: 25%; } /* Unidade */
+#afastadosTable th:nth-child(3), #afastadosTable td:nth-child(3) { width: 25%; } /* Defensoria */
+#afastadosTable th:nth-child(4), #afastadosTable td:nth-child(4) { width: 16%; } /* Titular */
+#afastadosTable th:nth-child(5), #afastadosTable td:nth-child(5) { width: 16%; } /* Substituto */
 
 #unidadesTable, #problemasTable, #regionaisTable {
   width: 100%;
@@ -1059,53 +1153,202 @@ body {
   table-layout: auto;
 }
 
-#unidadesTable th, #problemasTable th, #regionaisTable th {
+#unidadesTable th, #problemasTable th, #regionaisTable th, #vagasTable th, #afastadosTable th {
   background: #f8f9fa;
   color: #495057;
   font-weight: 600;
-  padding: 16px 12px;
+  padding: 12px 8px;
   text-align: left;
   border-bottom: 2px solid #dee2e6;
   white-space: nowrap;
-  font-size: 0.95rem;
-  min-width: 120px;
+  font-size: 0.9rem;
+  min-width: 80px;
 }
 
-#unidadesTable td, #problemasTable td, #regionaisTable td {
-  padding: 14px 12px;
+#unidadesTable td, #problemasTable td, #regionaisTable td, #vagasTable td, #afastadosTable td {
+  padding: 10px 8px;
   border-bottom: 1px solid #e9ecef;
   vertical-align: middle;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.4;
 }
 
-#unidadesTable tbody tr:hover, #problemasTable tbody tr:hover, #regionaisTable tbody tr:hover {
+#unidadesTable tbody tr:hover, #problemasTable tbody tr:hover, #regionaisTable tbody tr:hover, #vagasTable tbody tr:hover, #afastadosTable tbody tr:hover {
   background-color: #f8f9fa;
 }
 
 /* Estilos específicos para a tabela de regionais */
 #regionaisTable {
-  min-width: 100%;
-  width: 100%;
+  width: auto;
+  min-width: auto;
+  max-width: none;
+  margin: 0 auto;
+  table-layout: auto;
 }
 
 #regionaisTable th {
   text-align: center;
-  font-size: 0.9rem;
-  padding: 18px 8px;
+  font-size: 0.85rem;
+  padding: 12px 8px;
+  white-space: nowrap;
 }
 
 #regionaisTable td {
   text-align: center;
-  padding: 16px 8px;
+  padding: 10px 8px;
   font-weight: 500;
+  white-space: nowrap;
 }
 
 #regionaisTable td:first-child {
   text-align: left;
   font-weight: 600;
   color: #2c3e50;
-  min-width: 200px;
+  min-width: 150px;
+  max-width: 200px;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+/* Estilos para o rodapé da tabela de regionais */
+#regionaisTable tfoot {
+  background: #f8f9fa;
+  color: #495057;
+  font-weight: 600;
+}
+
+#regionaisTable tfoot td {
+  padding: 12px 8px;
+  text-align: center;
+  font-weight: 600;
+  font-size: 0.9rem;
+  border-top: 2px solid #dee2e6;
+  white-space: nowrap;
+  font-size: 0.85rem;
+  min-width: 80px;
+}
+
+#regionaisTable tfoot td:first-child {
+  text-align: left;
+  font-weight: 600;
+  color: #2c3e50;
+  min-width: 150px;
+  max-width: 200px;
+  word-wrap: break-word;
+  white-space: normal;
+}
+
+#regionaisTable tfoot .percent-problemas {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  min-width: 50px;
+  text-align: center;
+}
+
+/* Layout da tabela de estatísticas com gráfico */
+.table-container:has(#regionaisTable) {
+  display: flex;
+  flex-direction: row;
+  align-items: center; /* Centraliza verticalmente os elementos */
+  gap: 2rem;
+  width: 100%;
+  max-width: 100%;
+  min-height: 600px; /* Altura mínima para garantir alinhamento */
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.table-container:has(#regionaisTable) h3 {
+  text-align: left;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.table-container:has(#regionaisTable) .table-wrapper {
+  width: auto;
+  max-width: 100%;
+  overflow-x: auto;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+/* Container do gráfico */
+.chart-container-regionais {
+  flex: 1;
+  min-width: 400px;
+  max-width: 700px;
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+  border: 1px solid #e9ecef;
+  height: 600px; /* Altura fixa para o container do gráfico */
+  display: flex;
+  flex-direction: column;
+  justify-content: center; /* Centraliza verticalmente o conteúdo */
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Título removido - estilos mantidos para compatibilidade */
+
+/* Seletor de estatísticas do gráfico */
+.chart-selector {
+  display: flex;
+  gap: 0.4rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.chart-btn {
+  background: #f8f9fa;
+  border: 2px solid #e9ecef;
+  color: #495057;
+  padding: 0.4rem 0.8rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+.chart-btn:hover {
+  background: #e9ecef;
+  border-color: #4e9b5a;
+  color: #4e9b5a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(78, 155, 90, 0.2);
+}
+
+.chart-btn.active {
+  background: #4e9b5a;
+  border-color: #3a7745;
+  color: white;
+  box-shadow: 0 2px 6px rgba(78, 155, 90, 0.3);
+}
+
+.chart-btn.active:hover {
+  background: #3a7745;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(78, 155, 90, 0.4);
+}
+
+.chart-container-regionais canvas {
+  max-width: 100%;
+  width: 100%;
+  height: 500px !important; /* Altura ainda maior para o canvas */
+  max-height: 500px !important;
+  flex: 1;
 }
 
 /* Estilos para colunas ordenáveis */
@@ -1307,6 +1550,28 @@ body {
   font-weight: 600;
 }
 
+/* Responsive - Telas intermediárias (tablets grandes) */
+@media (max-width: 1024px) and (min-width: 769px) {
+  .table-container {
+    padding: 1.2rem;
+  }
+  
+  #vagasTable, #afastadosTable {
+    table-layout: fixed;
+  }
+  
+  #vagasTable th:nth-child(1), #vagasTable td:nth-child(1) { width: 22%; } /* Regional */
+  #vagasTable th:nth-child(2), #vagasTable td:nth-child(2) { width: 32%; } /* Unidade */
+  #vagasTable th:nth-child(3), #vagasTable td:nth-child(3) { width: 28%; } /* Defensoria */
+  #vagasTable th:nth-child(4), #vagasTable td:nth-child(4) { width: 18%; } /* Substituto */
+  
+  #afastadosTable th:nth-child(1), #afastadosTable td:nth-child(1) { width: 20%; } /* Regional */
+  #afastadosTable th:nth-child(2), #afastadosTable td:nth-child(2) { width: 28%; } /* Unidade */
+  #afastadosTable th:nth-child(3), #afastadosTable td:nth-child(3) { width: 26%; } /* Defensoria */
+  #afastadosTable th:nth-child(4), #afastadosTable td:nth-child(4) { width: 16%; } /* Titular */
+  #afastadosTable th:nth-child(5), #afastadosTable td:nth-child(5) { width: 16%; } /* Substituto */
+}
+
 /* Responsive */
 @media (max-width: 768px) {
   .dashboard-charts {
@@ -1318,38 +1583,95 @@ body {
   }
   
   .table-container {
-    padding: 1rem;
-    margin: 1rem 0;
+    padding: 0.8rem;
+    margin: 0.8rem 0;
   }
   
   .dashboard-tables {
-    margin: 1rem 0;
-    gap: 1rem;
+    margin: 0.8rem 0;
+    gap: 0.8rem;
   }
   
-  #unidadesTable, #problemasTable, #regionaisTable {
-    font-size: 0.8rem;
+  #unidadesTable, #problemasTable, #regionaisTable, #vagasTable, #afastadosTable {
+    font-size: 0.75rem;
     min-width: 100%;
   }
   
-  #unidadesTable th, #problemasTable th, #regionaisTable th,
-  #unidadesTable td, #problemasTable td, #regionaisTable td {
-    padding: 12px 6px;
-    font-size: 0.8rem;
+  #unidadesTable th, #problemasTable th, #regionaisTable th, #vagasTable th, #afastadosTable th,
+  #unidadesTable td, #problemasTable td, #regionaisTable td, #vagasTable td, #afastadosTable td {
+    padding: 8px 4px;
+    font-size: 0.75rem;
   }
   
   #regionaisTable {
-    min-width: 100%;
+    width: auto;
+    min-width: auto;
+    margin: 0 auto;
   }
   
   #regionaisTable td:first-child {
-    min-width: 120px;
+    min-width: 100px;
+    max-width: 150px;
+  }
+
+  /* Layout responsivo para tabela com gráfico */
+  .table-container:has(#regionaisTable) {
+    flex-direction: column;
+    gap: 1rem;
+    min-height: auto; /* Remove altura mínima em mobile */
+    align-items: stretch; /* Estica os elementos em mobile */
+    width: 100%;
+    max-width: 100%;
+    overflow: hidden;
+  }
+
+  .chart-container-regionais {
+    min-width: auto;
+    max-width: 100%;
+    width: 100%;
+    height: 450px; /* Altura otimizada para mobile */
+    justify-content: center; /* Mantém centralização em mobile */
+    box-sizing: border-box;
+    overflow: hidden;
+  }
+
+  .chart-container-regionais canvas {
+    height: 400px !important;
+    max-height: 400px !important;
+  }
+
+  .chart-selector {
+    flex-direction: column;
+    gap: 0.4rem;
+  }
+
+  .chart-btn {
+    flex: none;
+    width: 100%;
+    padding: 0.6rem 1rem;
+    font-size: 0.85rem;
   }
   
   .table-wrapper {
     overflow-x: auto;
     -webkit-overflow-scrolling: touch;
   }
+  
+  /* Ajustes específicos para tabelas de vagas e afastados em tablets */
+  #vagasTable, #afastadosTable {
+    table-layout: auto; /* Volta para layout automático em tablets */
+  }
+  
+  #vagasTable th:nth-child(1), #vagasTable td:nth-child(1) { width: 25%; } /* Regional */
+  #vagasTable th:nth-child(2), #vagasTable td:nth-child(2) { width: 35%; } /* Unidade */
+  #vagasTable th:nth-child(3), #vagasTable td:nth-child(3) { width: 25%; } /* Defensoria */
+  #vagasTable th:nth-child(4), #vagasTable td:nth-child(4) { width: 15%; } /* Substituto */
+  
+  #afastadosTable th:nth-child(1), #afastadosTable td:nth-child(1) { width: 20%; } /* Regional */
+  #afastadosTable th:nth-child(2), #afastadosTable td:nth-child(2) { width: 30%; } /* Unidade */
+  #afastadosTable th:nth-child(3), #afastadosTable td:nth-child(3) { width: 25%; } /* Defensoria */
+  #afastadosTable th:nth-child(4), #afastadosTable td:nth-child(4) { width: 12%; } /* Titular */
+  #afastadosTable th:nth-child(5), #afastadosTable td:nth-child(5) { width: 13%; } /* Substituto */
   
   .coordenacao-item {
     flex-direction: column;
@@ -1365,32 +1687,69 @@ body {
 /* Estilos para telas muito pequenas (móveis) */
 @media (max-width: 480px) {
   .table-container {
-    padding: 0.5rem;
-    margin: 0.5rem 0;
+    padding: 0.6rem;
+    margin: 0.6rem 0;
   }
   
   .dashboard-tables {
-    margin: 0.5rem 0;
-    gap: 0.5rem;
+    margin: 0.6rem 0;
+    gap: 0.6rem;
   }
   
-  #unidadesTable, #problemasTable, #regionaisTable {
-    font-size: 0.7rem;
+  #unidadesTable, #problemasTable, #regionaisTable, #vagasTable, #afastadosTable {
+    font-size: 0.65rem;
   }
   
-  #unidadesTable th, #problemasTable th, #regionaisTable th,
-  #unidadesTable td, #problemasTable td, #regionaisTable td {
-    padding: 8px 4px;
-    font-size: 0.7rem;
+  #unidadesTable th, #problemasTable th, #regionaisTable th, #vagasTable th, #afastadosTable th,
+  #unidadesTable td, #problemasTable td, #regionaisTable td, #vagasTable td, #afastadosTable td {
+    padding: 6px 3px;
+    font-size: 0.65rem;
+  }
+  
+  #regionaisTable {
+    width: auto;
+    min-width: auto;
+    margin: 0 auto;
   }
   
   #regionaisTable td:first-child {
-    min-width: 100px;
+    min-width: 80px;
+    max-width: 120px;
   }
   
   .table-container h3 {
     font-size: 1rem;
     margin-bottom: 1rem;
+  }
+  
+  /* Ajustes específicos para tabelas de vagas e afastados em móveis */
+  #vagasTable, #afastadosTable {
+    table-layout: auto; /* Layout automático em móveis */
+    min-width: 100%;
+  }
+  
+  /* Larguras mais compactas para móveis */
+  #vagasTable th:nth-child(1), #vagasTable td:nth-child(1) { width: 30%; } /* Regional */
+  #vagasTable th:nth-child(2), #vagasTable td:nth-child(2) { width: 40%; } /* Unidade */
+  #vagasTable th:nth-child(3), #vagasTable td:nth-child(3) { width: 20%; } /* Defensoria */
+  #vagasTable th:nth-child(4), #vagasTable td:nth-child(4) { width: 10%; } /* Substituto */
+  
+  #afastadosTable th:nth-child(1), #afastadosTable td:nth-child(1) { width: 25%; } /* Regional */
+  #afastadosTable th:nth-child(2), #afastadosTable td:nth-child(2) { width: 35%; } /* Unidade */
+  #afastadosTable th:nth-child(3), #afastadosTable td:nth-child(3) { width: 20%; } /* Defensoria */
+  #afastadosTable th:nth-child(4), #afastadosTable td:nth-child(4) { width: 10%; } /* Titular */
+  #afastadosTable th:nth-child(5), #afastadosTable td:nth-child(5) { width: 10%; } /* Substituto */
+  
+  /* Texto mais compacto em móveis */
+  #vagasTable td, #afastadosTable td {
+    font-size: 0.6rem;
+    line-height: 1.2;
+    padding: 4px 2px;
+  }
+  
+  #vagasTable th, #afastadosTable th {
+    font-size: 0.7rem;
+    padding: 8px 2px;
   }
 }
 
@@ -1398,4 +1757,77 @@ body {
   margin: 0 0 1rem 0;
   color: #495057;
   font-size: 1.1rem;
+}
+
+/* ===== Botão de Edição Pequeno ===== */
+.btn-edit-small {
+  background: #17a2b8;
+  color: white;
+  border: none;
+  padding: 4px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 500;
+  transition: all 0.3s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 28px;
+  height: 24px;
+}
+
+.btn-edit-small:hover {
+  background: #138496;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(23, 162, 184, 0.3);
+}
+
+.btn-edit-small:active {
+  transform: translateY(0);
+  box-shadow: 0 1px 2px rgba(23, 162, 184, 0.3);
+}
+
+.btn-edit-small:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px rgba(23, 162, 184, 0.3);
+}
+
+/* ===== Coluna de Ações ===== */
+.actions-column {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center !important;
+  padding: 8px 4px !important;
+}
+
+/* ===== Indicadores de Ordenação ===== */
+.sort-icon {
+  margin-left: 5px;
+  font-size: 12px;
+  opacity: 0.5;
+  transition: opacity 0.3s ease;
+}
+
+.sortable:hover .sort-icon {
+  opacity: 1;
+}
+
+.sorted-asc {
+  opacity: 1 !important;
+  color: #007bff;
+}
+
+.sorted-desc {
+  opacity: 1 !important;
+  color: #007bff;
+}
+
+.actions-column th {
+  width: 60px !important;
+  min-width: 60px !important;
+  max-width: 60px !important;
+  text-align: center !important;
+  padding: 8px 4px !important;
 }

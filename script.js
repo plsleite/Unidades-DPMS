@@ -692,6 +692,8 @@ function showAdminTab(tabName) {
     loadUnidadesList();
   } else if (tabName === 'orgaos') {
     loadOrgaosList();
+  } else if (tabName === 'regionais') {
+    loadRegionaisList();
   }
 }
 
@@ -1481,5 +1483,194 @@ function toggleAllUnits() {
     collapseAllBtn.classList.add('expanded');
     collapseAllIcon.textContent = '📂';
     collapseAllText.textContent = 'Expandir Todas';
+  }
+}
+
+/* =========================
+   GESTÃO DE REGIONAIS
+========================= */
+
+// Função para abrir modal de regional
+function openRegionalModal(regionalId = null) {
+  const modal = document.getElementById('regionalModal');
+  const title = document.getElementById('regionalModalTitle');
+  const form = document.getElementById('regionalForm');
+  
+  if (regionalId) {
+    title.textContent = 'Editar Regional';
+    loadRegionalData(regionalId);
+  } else {
+    title.textContent = 'Nova Regional';
+    form.reset();
+  }
+  
+  modal.style.display = 'block';
+}
+
+// Função para fechar modal de regional
+function closeRegionalModal() {
+  document.getElementById('regionalModal').style.display = 'none';
+}
+
+// Função para carregar dados da regional para edição
+async function loadRegionalData(regionalId) {
+  try {
+    const response = await fetch(`${API_BASE_URL}/regionais/${regionalId}`);
+    const regional = await response.json();
+    
+    if (response.ok) {
+      document.getElementById('regionalId').value = regional.id;
+      document.getElementById('regionalNome').value = regional.nome;
+      document.getElementById('regionalNumero').value = regional.numero;
+    } else {
+      console.error('Erro ao carregar regional:', regional.error);
+      alert('Erro ao carregar dados da regional');
+    }
+  } catch (error) {
+    console.error('Erro ao carregar regional:', error);
+    alert('Erro ao carregar dados da regional');
+  }
+}
+
+// Função para salvar regional
+async function handleRegionalSubmit(event) {
+  event.preventDefault();
+  
+  const formData = {
+    nome: document.getElementById('regionalNome').value,
+    numero: parseInt(document.getElementById('regionalNumero').value)
+  };
+  
+  const regionalId = document.getElementById('regionalId').value;
+  
+  if (!formData.nome || !formData.numero) {
+    alert('Nome e número da regional são obrigatórios');
+    return;
+  }
+  
+  try {
+    const url = regionalId ? `${API_BASE_URL}/regionais/${regionalId}` : `${API_BASE_URL}/regionais`;
+    const method = regionalId ? 'PUT' : 'POST';
+    
+    const response = await fetch(url, {
+      method: method,
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(formData)
+    });
+    
+    const result = await response.json();
+    
+    if (response.ok) {
+      alert(result.message);
+      closeRegionalModal();
+      loadRegionaisList();
+    } else {
+      alert(result.error || 'Erro ao salvar regional');
+    }
+  } catch (error) {
+    console.error('Erro ao salvar regional:', error);
+    alert('Erro ao salvar regional');
+  }
+}
+
+// Função para carregar lista de regionais
+async function loadRegionaisList() {
+  try {
+    const response = await fetch(`${API_BASE_URL}/regionais`);
+    const regionais = await response.json();
+    
+    if (response.ok) {
+      renderRegionaisList(regionais);
+    } else {
+      console.error('Erro ao carregar regionais:', regionais.error);
+    }
+  } catch (error) {
+    console.error('Erro ao carregar regionais:', error);
+  }
+}
+
+// Função para renderizar lista de regionais
+function renderRegionaisList(regionais) {
+  const regionaisList = document.getElementById('regionaisList');
+  
+  if (!regionaisList) return;
+  
+  regionaisList.innerHTML = '';
+  
+  regionais.forEach(regional => {
+    const regionalDiv = document.createElement('div');
+    regionalDiv.className = 'admin-item';
+    regionalDiv.innerHTML = `
+      <div class="admin-item-content">
+        <h4>${regional.nome}</h4>
+        <p><strong>Número:</strong> ${regional.numero}</p>
+        <p><strong>Unidades:</strong> ${regional.total_unidades}</p>
+        <p><strong>Defensorias:</strong> ${regional.total_defensorias}</p>
+        <p><strong>Vagas:</strong> ${regional.defensorias_vagas} | <strong>Afastados:</strong> ${regional.titulares_afastados}</p>
+      </div>
+      <div class="admin-item-actions">
+        <button class="btn-edit" onclick="openRegionalModal(${regional.id})">Editar</button>
+        <button class="btn-delete" onclick="deleteRegional(${regional.id})">Excluir</button>
+      </div>
+    `;
+    regionaisList.appendChild(regionalDiv);
+  });
+}
+
+// Função para excluir regional
+async function deleteRegional(regionalId) {
+  if (confirm('Tem certeza que deseja excluir esta regional?')) {
+    try {
+      const response = await fetch(`${API_BASE_URL}/regionais/${regionalId}`, {
+        method: 'DELETE'
+      });
+      
+      const result = await response.json();
+      
+      if (response.ok) {
+        alert(result.message);
+        loadRegionaisList();
+      } else {
+        alert(result.error || 'Erro ao excluir regional');
+      }
+    } catch (error) {
+      console.error('Erro ao excluir regional:', error);
+      alert('Erro ao excluir regional');
+    }
+  }
+}
+
+// Adicionar event listener para o formulário de regional
+document.addEventListener('DOMContentLoaded', function() {
+  const regionalForm = document.getElementById('regionalForm');
+  if (regionalForm) {
+    regionalForm.addEventListener('submit', handleRegionalSubmit);
+  }
+});
+
+// Função para editar defensoria a partir da tabela de defensorias vagas
+function editDefensoriaFromTable(defensoriaId) {
+  // Abrir o modal de edição de defensoria
+  openOrgaoModal(defensoriaId);
+}
+
+// Função para alternar colapso/expansão de tabelas
+function toggleTable(tableId) {
+  const tableWrapper = document.getElementById(tableId);
+  const title = document.querySelector(`[onclick="toggleTable('${tableId}')"]`);
+  const icon = title.querySelector('.collapse-icon');
+  
+  if (tableWrapper.style.display === 'none' || tableWrapper.style.display === '') {
+    // Expandir tabela
+    tableWrapper.style.display = 'block';
+    icon.classList.add('expanded');
+    icon.textContent = '▲';
+  } else {
+    // Colapsar tabela
+    tableWrapper.style.display = 'none';
+    icon.classList.remove('expanded');
+    icon.textContent = '▼';
   }
 }

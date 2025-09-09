@@ -532,23 +532,6 @@ router.delete('/orgaos/:id', async (req, res) => {
 });
 
 // =========================
-// ENDPOINTS DE REGIONAIS
-// =========================
-
-// GET /api/regionais - Listar todas as regionais
-router.get('/regionais', async (req, res) => {
-  try {
-    const sql = 'SELECT * FROM regionais ORDER BY numero';
-    const result = await query(sql);
-    res.json(result.rows);
-    
-  } catch (error) {
-    console.error('Erro ao buscar regionais:', error);
-    res.status(500).json({ error: 'Erro interno do servidor' });
-  }
-});
-
-// =========================
 // ENDPOINT COMBINADO - UNIDADES COM DEFENSORIAS
 // =========================
 
@@ -694,6 +677,7 @@ router.get('/dashboard/stats', async (req, res) => {
 router.get('/dashboard/regionais', async (req, res) => {
   try {
     const sql = `
+      -- Dados das regionais normais
       SELECT 
         r.id,
         r.nome,
@@ -706,7 +690,23 @@ router.get('/dashboard/regionais', async (req, res) => {
       LEFT JOIN unidades u ON r.id = u.regional_id
       LEFT JOIN orgaos o ON u.id = o.unidade_id
       GROUP BY r.id, r.nome, r.numero
-      ORDER BY r.numero
+      
+      UNION ALL
+      
+      -- Dados da unidade CAMPO GRANDE | 2ª INSTÂNCIA como "Segunda Instância"
+      SELECT 
+        999 as id,
+        'Segunda Instância' as nome,
+        99 as numero,
+        1 as total_unidades,
+        COUNT(o.id) as total_defensorias,
+        COUNT(CASE WHEN o.vaga = true THEN 1 END) as defensorias_vagas,
+        COUNT(CASE WHEN o.titular_afastado = true THEN 1 END) as titulares_afastados
+      FROM unidades u
+      LEFT JOIN orgaos o ON u.id = o.unidade_id
+      WHERE u.nome = 'CAMPO GRANDE | 2ª INSTÂNCIA'
+      
+      ORDER BY numero
     `;
     
     const result = await query(sql);
@@ -1022,6 +1022,196 @@ router.delete('/coordenacoes/:id', async (req, res) => {
     
   } catch (error) {
     console.error('Erro ao excluir coordenação:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// =========================
+// ENDPOINTS DE REGIONAIS
+// =========================
+
+// GET /api/regionais - Listar todas as regionais
+router.get('/regionais', async (req, res) => {
+  try {
+    const sql = `
+      SELECT 
+        r.id,
+        r.nome,
+        r.numero,
+        COUNT(DISTINCT u.id) as total_unidades,
+        COUNT(o.id) as total_defensorias,
+        COUNT(CASE WHEN o.vaga = true THEN 1 END) as defensorias_vagas,
+        COUNT(CASE WHEN o.titular_afastado = true THEN 1 END) as titulares_afastados
+      FROM regionais r
+      LEFT JOIN unidades u ON r.id = u.regional_id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id
+      GROUP BY r.id, r.nome, r.numero
+      ORDER BY r.numero
+    `;
+    
+    const result = await query(sql);
+    res.json(result.rows);
+    
+  } catch (error) {
+    console.error('Erro ao listar regionais:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// GET /api/regionais/:id - Buscar regional específica
+router.get('/regionais/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    const sql = `
+      SELECT 
+        r.id,
+        r.nome,
+        r.numero,
+        COUNT(DISTINCT u.id) as total_unidades,
+        COUNT(o.id) as total_defensorias,
+        COUNT(CASE WHEN o.vaga = true THEN 1 END) as defensorias_vagas,
+        COUNT(CASE WHEN o.titular_afastado = true THEN 1 END) as titulares_afastados
+      FROM regionais r
+      LEFT JOIN unidades u ON r.id = u.regional_id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id
+      WHERE r.id = $1
+      GROUP BY r.id, r.nome, r.numero
+    `;
+    
+    const result = await query(sql, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Regional não encontrada' });
+    }
+    
+    res.json(result.rows[0]);
+    
+  } catch (error) {
+    console.error('Erro ao buscar regional:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// POST /api/regionais - Criar nova regional
+router.post('/regionais', async (req, res) => {
+  try {
+    const { nome, numero } = req.body;
+    
+    // Validações básicas
+    if (!nome || !numero) {
+      return res.status(400).json({ 
+        error: 'Nome e número da regional são obrigatórios' 
+      });
+    }
+    
+    // Verificar se já existe uma regional com o mesmo número
+    const checkSql = 'SELECT id FROM regionais WHERE numero = $1';
+    const checkResult = await query(checkSql, [numero]);
+    
+    if (checkResult.rows.length > 0) {
+      return res.status(400).json({ 
+        error: 'Já existe uma regional com este número' 
+      });
+    }
+    
+    const sql = `
+      INSERT INTO regionais (nome, numero) 
+      VALUES ($1, $2) 
+      RETURNING *
+    `;
+    
+    const result = await query(sql, [nome, numero]);
+    res.status(201).json({
+      success: true,
+      message: 'Regional criada com sucesso',
+      regional: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao criar regional:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// PUT /api/regionais/:id - Atualizar regional
+router.put('/regionais/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nome, numero } = req.body;
+    
+    // Validações básicas
+    if (!nome || !numero) {
+      return res.status(400).json({ 
+        error: 'Nome e número da regional são obrigatórios' 
+      });
+    }
+    
+    // Verificar se já existe outra regional com o mesmo número
+    const checkSql = 'SELECT id FROM regionais WHERE numero = $1 AND id != $2';
+    const checkResult = await query(checkSql, [numero, id]);
+    
+    if (checkResult.rows.length > 0) {
+      return res.status(400).json({ 
+        error: 'Já existe outra regional com este número' 
+      });
+    }
+    
+    const sql = `
+      UPDATE regionais SET 
+        nome = $1, 
+        numero = $2
+      WHERE id = $3
+      RETURNING *
+    `;
+    
+    const result = await query(sql, [nome, numero, id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Regional não encontrada' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Regional atualizada com sucesso',
+      regional: result.rows[0]
+    });
+    
+  } catch (error) {
+    console.error('Erro ao atualizar regional:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
+// DELETE /api/regionais/:id - Excluir regional
+router.delete('/regionais/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    
+    // Verificar se a regional tem unidades associadas
+    const checkSql = 'SELECT COUNT(*) as count FROM unidades WHERE regional_id = $1';
+    const checkResult = await query(checkSql, [id]);
+    
+    if (parseInt(checkResult.rows[0].count) > 0) {
+      return res.status(400).json({ 
+        error: 'Não é possível excluir uma regional que possui unidades associadas' 
+      });
+    }
+    
+    const sql = 'DELETE FROM regionais WHERE id = $1';
+    const result = await query(sql, [id]);
+    
+    if (result.rowCount === 0) {
+      return res.status(404).json({ error: 'Regional não encontrada' });
+    }
+    
+    res.json({
+      success: true,
+      message: 'Regional excluída com sucesso'
+    });
+    
+  } catch (error) {
+    console.error('Erro ao excluir regional:', error);
     res.status(500).json({ error: 'Erro interno do servidor' });
   }
 });

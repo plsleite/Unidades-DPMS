@@ -98,6 +98,7 @@
 
       <div class="admin-tabs">
         <button class="tab-btn active" onclick="showAdminTab('dashboard')">📊 Dashboard</button>
+        <button class="tab-btn" onclick="showAdminTab('regionais')">🌍 Regionais</button>
         <button class="tab-btn" onclick="showAdminTab('unidades')">🏢 Unidades</button>
         <button class="tab-btn" onclick="showAdminTab('orgaos')">👥 Defensorias</button>
       </div>
@@ -130,68 +131,133 @@
 
         <div class="dashboard-tables">
           <div class="table-container">
-            <h3>📊 Estatísticas por Regional</h3>
-            <div class="table-wrapper">
-              <table id="regionaisTable">
+            <div>
+              <h3>📊 Estatísticas por Regional</h3>
+              <div class="table-wrapper">
+                <table id="regionaisTable">
+                  <thead>
+                    <tr>
+                      <th onclick="sortTable('regionaisTable', 0)" class="sortable">
+                        Regional <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 1)" class="sortable">
+                        Defensorias <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 2)" class="sortable">
+                        Vagas <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 3)" class="sortable">
+                        % Vagas <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 4)" class="sortable">
+                        Afastados <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 5)" class="sortable">
+                        % Afastados <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 6)" class="sortable">
+                        Total <span class="sort-icon">↕️</span>
+                      </th>
+                      <th onclick="sortTable('regionaisTable', 7)" class="sortable">
+                        % Total <span class="sort-icon">↕️</span>
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody id="regionaisTableBody">
+                    <!-- Dados serão carregados aqui -->
+                  </tbody>
+                  <tfoot id="regionaisTableFooter" style="display: none;">
+                    <!-- Totais serão carregados aqui -->
+                  </tfoot>
+                </table>
+              </div>
+            </div>
+            <div class="chart-container-regionais">
+              <!-- Botões de seleção de estatística -->
+              <div class="chart-selector">
+                <button class="chart-btn active" data-stat="total-vagas" onclick="changeChartType('total-vagas')">
+                  Vagas
+                </button>
+                <button class="chart-btn" data-stat="percent-vagas" onclick="changeChartType('percent-vagas')">
+                  % Vagas
+                </button>
+                <button class="chart-btn" data-stat="total-afastados" onclick="changeChartType('total-afastados')">
+                  Afastados
+                </button>
+                <button class="chart-btn" data-stat="percent-afastados" onclick="changeChartType('percent-afastados')">
+                  % Afastados
+                </button>
+                <button class="chart-btn" data-stat="total-prejudicadas" onclick="changeChartType('total-prejudicadas')">
+                  Total
+                </button>
+                <button class="chart-btn" data-stat="percent-prejudicadas" onclick="changeChartType('percent-prejudicadas')">
+                  % Total
+                </button>
+              </div>
+              
+              <canvas id="regionaisChart"></canvas>
+            </div>
+          </div>
+
+          <!-- Tabela de Defensorias Vagas -->
+          <div class="table-container">
+            <h3 class="collapsible-title" onclick="toggleTable('vagasTable')">
+              📋 Defensorias Vagas <span class="collapse-icon">▼</span>
+            </h3>
+            <div class="table-wrapper" id="vagasTable" style="display: none;">
+              <table id="vagasTable">
                 <thead>
                   <tr>
-                    <th onclick="sortTable('regionaisTable', 0)" class="sortable">
+                    <th onclick="sortTable('vagasTable', 0)" class="sortable">
                       Regional <span class="sort-icon">↕️</span>
                     </th>
-                    <th onclick="sortTable('regionaisTable', 1)" class="sortable">
-                      Total Defensorias <span class="sort-icon">↕️</span>
+                    <th onclick="sortTable('vagasTable', 1)" class="sortable">
+                      Unidade <span class="sort-icon">↕️</span>
                     </th>
-                    <th onclick="sortTable('regionaisTable', 2)" class="sortable">
-                      Defensorias Vagas <span class="sort-icon">↕️</span>
+                    <th class="actions-column">Editar</th>
+                    <th onclick="sortTable('vagasTable', 3)" class="sortable">
+                      Defensoria <span class="sort-icon">↕️</span>
                     </th>
-                    <th onclick="sortTable('regionaisTable', 3)" class="sortable">
-                      % Vagas <span class="sort-icon">↕️</span>
-                    </th>
-                    <th onclick="sortTable('regionaisTable', 4)" class="sortable">
-                      Total Titulares <span class="sort-icon">↕️</span>
-                    </th>
-                    <th onclick="sortTable('regionaisTable', 5)" class="sortable">
-                      Titulares Afastados <span class="sort-icon">↕️</span>
-                    </th>
-                    <th onclick="sortTable('regionaisTable', 6)" class="sortable">
-                      % Afastados <span class="sort-icon">↕️</span>
+                    <th onclick="sortTable('vagasTable', 4)" class="sortable">
+                      Substituto <span class="sort-icon">↕️</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody id="regionaisTableBody">
+                <tbody id="vagasTableBody">
                   <!-- Dados serão carregados aqui -->
                 </tbody>
               </table>
             </div>
           </div>
 
+          <!-- Tabela de Titulares Afastados -->
           <div class="table-container">
-            <h3>📋 Listagem das Defensorias Vagas e dos Titulares Afastados</h3>
-            <div class="table-wrapper">
-              <table id="problemasTable">
+            <h3 class="collapsible-title" onclick="toggleTable('afastadosTable')">
+              📋 Titulares Afastados <span class="collapse-icon">▼</span>
+            </h3>
+            <div class="table-wrapper" id="afastadosTable" style="display: none;">
+              <table id="afastadosTable">
                 <thead>
                   <tr>
-                    <th onclick="sortTable('problemasTable', 0)" class="sortable">
-                      Defensoria <span class="sort-icon">↕️</span>
-                    </th>
-                    <th onclick="sortTable('problemasTable', 1)" class="sortable">
-                      Unidade <span class="sort-icon">↕️</span>
-                    </th>
-                    <th onclick="sortTable('problemasTable', 2)" class="sortable">
+                    <th onclick="sortTable('afastadosTable', 0)" class="sortable">
                       Regional <span class="sort-icon">↕️</span>
                     </th>
-                    <th onclick="sortTable('problemasTable', 3)" class="sortable">
-                      Status <span class="sort-icon">↕️</span>
+                    <th onclick="sortTable('afastadosTable', 1)" class="sortable">
+                      Unidade <span class="sort-icon">↕️</span>
                     </th>
-                    <th onclick="sortTable('problemasTable', 4)" class="sortable">
+                    <th class="actions-column">Editar</th>
+                    <th onclick="sortTable('afastadosTable', 3)" class="sortable">
+                      Defensoria <span class="sort-icon">↕️</span>
+                    </th>
+                    <th onclick="sortTable('afastadosTable', 4)" class="sortable">
                       Titular <span class="sort-icon">↕️</span>
                     </th>
-                    <th onclick="sortTable('problemasTable', 5)" class="sortable">
+                    <th onclick="sortTable('afastadosTable', 5)" class="sortable">
                       Substituto <span class="sort-icon">↕️</span>
                     </th>
                   </tr>
                 </thead>
-                <tbody id="problemasTableBody">
+                <tbody id="afastadosTableBody">
                   <!-- Dados serão carregados aqui -->
                 </tbody>
               </table>
@@ -219,6 +285,17 @@
         </div>
         <div id="orgaosList" class="admin-list">
           <!-- Lista de defensorias será carregada aqui -->
+        </div>
+      </div>
+
+      <!-- Gestão de Regionais -->
+      <div id="adminRegionais" class="admin-tab-content">
+        <div class="admin-section-header">
+          <h3>🌍 Gestão de Regionais</h3>
+          <button onclick="openRegionalModal()" class="btn-add">+ Nova Regional</button>
+        </div>
+        <div id="regionaisList" class="admin-list">
+          <!-- Lista de regionais será carregada aqui -->
         </div>
       </div>
 
@@ -436,6 +513,34 @@
       </div>
     </div>
 
+    <!-- Modal de Regional -->
+    <div id="regionalModal" class="modal">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h2 id="regionalModalTitle">Nova Regional</h2>
+          <span class="close" onclick="closeRegionalModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+          <form id="regionalForm">
+            <input type="hidden" id="regionalId">
+            <div class="form-row">
+              <div class="form-group">
+                <label for="regionalNome">Nome da Regional *</label>
+                <input type="text" id="regionalNome" required placeholder="Ex: 1ª Regional de Campo Grande">
+              </div>
+              <div class="form-group">
+                <label for="regionalNumero">Número da Regional *</label>
+                <input type="number" id="regionalNumero" required min="1" placeholder="Ex: 1">
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" onclick="closeRegionalModal()" class="btn-cancel">Cancelar</button>
+              <button type="submit" class="btn-save">Salvar</button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
 
   <script>
     // Dashboard Charts and Data Loading
@@ -484,11 +589,49 @@
     }
 
 
+    // Variável global para armazenar dados do gráfico
+    let chartData = {
+      labels: [],
+      percentVagas: [],
+      totalVagas: [],
+      percentAfastados: [],
+      totalAfastados: [],
+      totalPrejudicadas: [],
+      percentPrejudicadas: [],
+      colors: {
+        percentVagas: [],
+        totalVagas: [],
+        percentAfastados: [],
+        totalAfastados: [],
+        totalPrejudicadas: [],
+        percentPrejudicadas: []
+      }
+    };
+
     function renderRegionaisTable() {
       if (!dashboardData.regionais) return;
 
       const tbody = document.getElementById('regionaisTableBody');
       tbody.innerHTML = '';
+
+      // Limpar dados anteriores
+      chartData = {
+        labels: [],
+        percentVagas: [],
+        totalVagas: [],
+        percentAfastados: [],
+        totalAfastados: [],
+        totalPrejudicadas: [],
+        percentPrejudicadas: [],
+        colors: {
+          percentVagas: [],
+          totalVagas: [],
+          percentAfastados: [],
+          totalAfastados: [],
+          totalPrejudicadas: [],
+          percentPrejudicadas: []
+        }
+      };
 
       dashboardData.regionais.forEach(regional => {
         const row = document.createElement('tr');
@@ -503,44 +646,322 @@
         const percentAfastados = totalDefensorias > 0 ? 
           ((titularesAfastados / totalDefensorias) * 100).toFixed(1) : '0.0';
         
+        // Calcular total de defensorias prejudicadas (vagas + afastados)
+        const totalPrejudicadas = defensoriasVagas + titularesAfastados;
+        const percentTotal = totalDefensorias > 0 ? 
+          ((totalPrejudicadas / totalDefensorias) * 100).toFixed(1) : '0.0';
+        
         // Classes para destacar percentuais altos
         const vagasClass = parseFloat(percentVagas) > 20 ? 'percent-alto' : 
                           parseFloat(percentVagas) > 10 ? 'percent-medio' : 'percent-baixo';
         const afastadosClass = parseFloat(percentAfastados) > 20 ? 'percent-alto' : 
                               parseFloat(percentAfastados) > 10 ? 'percent-medio' : 'percent-baixo';
+        const totalClass = parseFloat(percentTotal) > 20 ? 'percent-alto' : 
+                          parseFloat(percentTotal) > 10 ? 'percent-medio' : 'percent-baixo';
         
         row.innerHTML = `
           <td>${regional.nome}</td>
           <td>${totalDefensorias}</td>
           <td>${defensoriasVagas}</td>
           <td><span class="percent-problemas ${vagasClass}">${percentVagas}%</span></td>
-          <td>${totalDefensorias}</td>
           <td>${titularesAfastados}</td>
           <td><span class="percent-problemas ${afastadosClass}">${percentAfastados}%</span></td>
+          <td>${totalPrejudicadas}</td>
+          <td><span class="percent-problemas ${totalClass}">${percentTotal}%</span></td>
         `;
         tbody.appendChild(row);
+
+        // Preparar dados para o gráfico
+        chartData.labels.push(regional.nome);
+        chartData.percentVagas.push(parseFloat(percentVagas));
+        chartData.totalVagas.push(defensoriasVagas);
+        chartData.percentAfastados.push(parseFloat(percentAfastados));
+        chartData.totalAfastados.push(titularesAfastados);
+        chartData.totalPrejudicadas.push(totalPrejudicadas);
+        chartData.percentPrejudicadas.push(parseFloat(percentTotal));
+        
+        // Definir cores baseadas nos valores
+        chartData.colors.percentVagas.push(getColorByValue(parseFloat(percentVagas), 'percent'));
+        chartData.colors.totalVagas.push(getColorByValue(defensoriasVagas, 'total'));
+        chartData.colors.percentAfastados.push(getColorByValue(parseFloat(percentAfastados), 'percent'));
+        chartData.colors.totalAfastados.push(getColorByValue(titularesAfastados, 'total'));
+        chartData.colors.totalPrejudicadas.push(getColorByValue(totalPrejudicadas, 'total'));
+        chartData.colors.percentPrejudicadas.push(getColorByValue(parseFloat(percentTotal), 'percent'));
       });
+
+      // Criar o gráfico inicial (total de vagas)
+      createRegionaisChart('total-vagas');
+      
+      // Calcular e exibir totais no rodapé
+      renderRegionaisFooter();
+    }
+
+    // Função para renderizar o rodapé com totais
+    function renderRegionaisFooter() {
+      if (!dashboardData.regionais || dashboardData.regionais.length === 0) return;
+
+      const tfoot = document.getElementById('regionaisTableFooter');
+      if (!tfoot) return;
+
+      // Calcular totais
+      let totalDefensorias = 0;
+      let totalVagas = 0;
+      let totalAfastados = 0;
+      let totalPrejudicadas = 0;
+
+      dashboardData.regionais.forEach(regional => {
+        totalDefensorias += parseInt(regional.total_defensorias) || 0;
+        totalVagas += parseInt(regional.defensorias_vagas) || 0;
+        totalAfastados += parseInt(regional.titulares_afastados) || 0;
+      });
+
+      totalPrejudicadas = totalVagas + totalAfastados;
+
+      // Calcular percentuais
+      const percentVagas = totalDefensorias > 0 ? 
+        ((totalVagas / totalDefensorias) * 100).toFixed(1) : '0.0';
+      const percentAfastados = totalDefensorias > 0 ? 
+        ((totalAfastados / totalDefensorias) * 100).toFixed(1) : '0.0';
+      const percentTotal = totalDefensorias > 0 ? 
+        ((totalPrejudicadas / totalDefensorias) * 100).toFixed(1) : '0.0';
+
+      // Classes para destacar percentuais altos
+      const vagasClass = parseFloat(percentVagas) > 20 ? 'percent-alto' : 
+                        parseFloat(percentVagas) > 10 ? 'percent-medio' : 'percent-baixo';
+      const afastadosClass = parseFloat(percentAfastados) > 20 ? 'percent-alto' : 
+                            parseFloat(percentAfastados) > 10 ? 'percent-medio' : 'percent-baixo';
+      const totalClass = parseFloat(percentTotal) > 20 ? 'percent-alto' : 
+                        parseFloat(percentTotal) > 10 ? 'percent-medio' : 'percent-baixo';
+
+      // Renderizar rodapé
+      tfoot.innerHTML = `
+        <tr>
+          <td>TOTAL GERAL</td>
+          <td>${totalDefensorias}</td>
+          <td>${totalVagas}</td>
+          <td><span class="percent-problemas ${vagasClass}">${percentVagas}%</span></td>
+          <td>${totalAfastados}</td>
+          <td><span class="percent-problemas ${afastadosClass}">${percentAfastados}%</span></td>
+          <td>${totalPrejudicadas}</td>
+          <td><span class="percent-problemas ${totalClass}">${percentTotal}%</span></td>
+        </tr>
+      `;
+
+      // Mostrar o rodapé
+      tfoot.style.display = 'table-footer-group';
+    }
+
+    // Função para determinar cor baseada no valor
+    function getColorByValue(value, type) {
+      if (type === 'percent') {
+        if (value > 20) return '#dc3545'; // Vermelho para alto
+        if (value > 10) return '#ffc107'; // Amarelo para médio
+        return '#28a745'; // Verde para baixo
+      } else {
+        // Para valores absolutos, usar uma escala baseada no máximo
+        let maxValue;
+        if (type === 'total') {
+          // Usar o maior valor entre totalVagas, totalAfastados e totalPrejudicadas
+          maxValue = Math.max(
+            Math.max(...chartData.totalVagas),
+            Math.max(...chartData.totalAfastados),
+            Math.max(...chartData.totalPrejudicadas)
+          );
+        } else {
+          maxValue = Math.max(...chartData[type === 'total' ? 'totalVagas' : 'totalAfastados']);
+        }
+        const ratio = value / maxValue;
+        if (ratio > 0.7) return '#dc3545';
+        if (ratio > 0.4) return '#ffc107';
+        return '#28a745';
+      }
+    }
+
+    function createRegionaisChart(statType) {
+      const ctx = document.getElementById('regionaisChart');
+      if (!ctx || !chartData.labels.length) return;
+
+      // Destruir gráfico existente se houver
+      if (window.regionaisChartInstance) {
+        window.regionaisChartInstance.destroy();
+      }
+
+      // Determinar dados e configurações baseado no tipo
+      let data, colors, label, yAxisLabel, tooltipSuffix;
+      
+      switch(statType) {
+        case 'percent-vagas':
+          data = chartData.percentVagas;
+          colors = chartData.colors.percentVagas;
+          label = '% Vagas';
+          yAxisLabel = '%';
+          tooltipSuffix = '%';
+          break;
+        case 'total-vagas':
+          data = chartData.totalVagas;
+          colors = chartData.colors.totalVagas;
+          label = 'Vagas';
+          yAxisLabel = 'Quantidade';
+          tooltipSuffix = ' vagas';
+          break;
+        case 'percent-afastados':
+          data = chartData.percentAfastados;
+          colors = chartData.colors.percentAfastados;
+          label = '% Afastados';
+          yAxisLabel = '%';
+          tooltipSuffix = '%';
+          break;
+        case 'total-afastados':
+          data = chartData.totalAfastados;
+          colors = chartData.colors.totalAfastados;
+          label = 'Afastados';
+          yAxisLabel = 'Quantidade';
+          tooltipSuffix = ' afastados';
+          break;
+        case 'total-prejudicadas':
+          data = chartData.totalPrejudicadas;
+          colors = chartData.colors.totalPrejudicadas;
+          label = 'Total';
+          yAxisLabel = 'Quantidade';
+          tooltipSuffix = ' prejudicadas';
+          break;
+        case 'percent-prejudicadas':
+          data = chartData.percentPrejudicadas;
+          colors = chartData.colors.percentPrejudicadas;
+          label = '% Total';
+          yAxisLabel = '%';
+          tooltipSuffix = '%';
+          break;
+        default:
+          return;
+      }
+
+      window.regionaisChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: label,
+            data: data,
+            backgroundColor: colors,
+            borderColor: colors.map(color => color),
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const value = context.parsed.y;
+                  return value.toFixed(statType.includes('percent') ? 1 : 0) + tooltipSuffix;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              max: statType.includes('percent') ? Math.max(...data) + 5 : Math.max(...data) + 1,
+              ticks: {
+                callback: function(value) {
+                  return value + (statType.includes('percent') ? '%' : '');
+                }
+              },
+              grid: {
+                color: 'rgba(0,0,0,0.1)'
+              }
+            },
+            x: {
+              ticks: {
+                maxRotation: 45,
+                minRotation: 0,
+                font: {
+                  size: 10
+                }
+              },
+              grid: {
+                display: false
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Função para trocar o tipo de gráfico
+    function changeChartType(statType) {
+      // Atualizar botões ativos
+      document.querySelectorAll('.chart-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`[data-stat="${statType}"]`).classList.add('active');
+      
+      // Atualizar gráfico
+      createRegionaisChart(statType);
     }
 
     function renderProblemasTable() {
       if (!dashboardData.problemas) return;
 
-      const tbody = document.getElementById('problemasTableBody');
+      // Separar os dados em defensorias vagas e titulares afastados
+      const defensoriasVagas = dashboardData.problemas.filter(problema => problema.vaga === true);
+      const titularesAfastados = dashboardData.problemas.filter(problema => problema.titular_afastado === true);
+
+      // Renderizar tabela de defensorias vagas
+      renderVagasTable(defensoriasVagas);
+      
+      // Renderizar tabela de titulares afastados
+      renderAfastadosTable(titularesAfastados);
+    }
+
+    function renderVagasTable(defensoriasVagas) {
+      const tbody = document.getElementById('vagasTableBody');
       tbody.innerHTML = '';
 
-
-      dashboardData.problemas.forEach(problema => {
+      defensoriasVagas.forEach(defensoria => {
         const row = document.createElement('tr');
-        const statusClass = problema.status === 'Vaga' ? 'status-vaga' : 
-                           problema.status === 'Afastado' ? 'status-afastado' : 'status-ambos';
         
         row.innerHTML = `
-          <td>${problema.nome}</td>
-          <td>${problema.unidade_nome}</td>
-          <td>${problema.regional_nome}</td>
-          <td><span class="status-badge ${statusClass}">${problema.status}</span></td>
-          <td>${problema.titular_nome || '-'}</td>
-          <td>${problema.substituto_nome || '-'}</td>
+          <td>${defensoria.regional_nome || '-'}</td>
+          <td>${defensoria.unidade_nome}</td>
+          <td class="actions-column">
+            <button class="btn-edit-small" onclick="editDefensoriaFromTable(${defensoria.id})" title="Editar Defensoria">
+              ✏️
+            </button>
+          </td>
+          <td>${defensoria.nome}</td>
+          <td>${defensoria.substituto_nome || '-'}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    function renderAfastadosTable(titularesAfastados) {
+      const tbody = document.getElementById('afastadosTableBody');
+      tbody.innerHTML = '';
+
+      titularesAfastados.forEach(defensoria => {
+        const row = document.createElement('tr');
+        
+        row.innerHTML = `
+          <td>${defensoria.regional_nome || '-'}</td>
+          <td>${defensoria.unidade_nome}</td>
+          <td class="actions-column">
+            <button class="btn-edit-small" onclick="editDefensoriaFromTable(${defensoria.id})" title="Editar Defensoria">
+              ✏️
+            </button>
+          </td>
+          <td>${defensoria.nome}</td>
+          <td>${defensoria.titular_nome || '-'}</td>
+          <td>${defensoria.substituto_nome || '-'}</td>
         `;
         tbody.appendChild(row);
       });
@@ -590,13 +1011,17 @@
       headers.forEach(header => {
         header.removeAttribute('data-sort');
         const icon = header.querySelector('.sort-icon');
-        icon.classList.remove('sorted-asc', 'sorted-desc');
+        if (icon) {
+          icon.classList.remove('sorted-asc', 'sorted-desc');
+        }
       });
       
       // Definir nova ordenação
       currentHeader.setAttribute('data-sort', newSort);
       const icon = currentHeader.querySelector('.sort-icon');
-      icon.classList.add(newSort === 'asc' ? 'sorted-asc' : 'sorted-desc');
+      if (icon) {
+        icon.classList.add(newSort === 'asc' ? 'sorted-asc' : 'sorted-desc');
+      }
       
       // Ordenar linhas
       rows.sort((a, b) => {
@@ -611,7 +1036,7 @@
           // Ordenação numérica
           return newSort === 'asc' ? aNum - bNum : bNum - aNum;
         } else {
-          // Ordenação alfabética
+          // Ordenação alfabética com suporte a números
           return newSort === 'asc' 
             ? aValue.localeCompare(bValue, 'pt-BR', { numeric: true })
             : bValue.localeCompare(aValue, 'pt-BR', { numeric: true });
