@@ -659,6 +659,52 @@ body {
   transform: translateY(-2px);
 }
 
+/* Cards clicáveis */
+.clickable-stat {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.clickable-stat::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(40, 167, 69, 0.1), transparent);
+  transition: left 0.5s ease;
+}
+
+.clickable-stat:hover::before {
+  left: 100%;
+}
+
+.clickable-stat:hover {
+  transform: translateY(-5px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(40, 167, 69, 0.3);
+  background: linear-gradient(135deg, #e8f5e8 0%, #f0f8f0 50%, #ffffff 100%);
+  border: 2px solid rgba(40, 167, 69, 0.3);
+}
+
+.clickable-stat:hover h3 {
+  color: #28a745;
+  transform: scale(1.05);
+}
+
+.clickable-stat:hover .stat-number {
+  color: #28a745;
+  transform: scale(1.1);
+  font-weight: 700;
+}
+
+.clickable-stat:active {
+  transform: translateY(-2px) scale(1.01);
+  box-shadow: 0 4px 15px rgba(40, 167, 69, 0.4);
+}
+
 .stat-card h3 {
   margin: 0 0 15px 0;
   color: #666;
@@ -1204,32 +1250,35 @@ body {
 #unidadesTable, #problemasTable, #regionaisTable {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.9rem;
+  font-size: 0.875rem;
   table-layout: auto;
+  background: white;
 }
 
 #unidadesTable th, #problemasTable th, #regionaisTable th, #vagasTable th, #afastadosTable th {
-  background: #f8f9fa;
-  color: #495057;
+  background: #f8fafc;
+  color: #374151;
   font-weight: 600;
-  padding: 12px 8px;
+  padding: 1rem 0.75rem;
   text-align: left;
-  border-bottom: 2px solid #dee2e6;
+  border-bottom: 1px solid #e5e7eb;
   white-space: nowrap;
-  font-size: 0.9rem;
+  font-size: 0.75rem;
   min-width: 80px;
 }
 
 #unidadesTable td, #problemasTable td, #regionaisTable td, #vagasTable td, #afastadosTable td {
-  padding: 10px 8px;
-  border-bottom: 1px solid #e9ecef;
+  padding: 0.875rem 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
   vertical-align: middle;
-  font-size: 0.85rem;
-  line-height: 1.4;
+  font-size: 0.875rem;
+  line-height: 1.5;
+  color: #374151;
 }
 
 #unidadesTable tbody tr:hover, #problemasTable tbody tr:hover, #regionaisTable tbody tr:hover, #vagasTable tbody tr:hover, #afastadosTable tbody tr:hover {
-  background-color: #f8f9fa;
+  background-color: #f8fafc;
+  transition: background-color 0.2s ease;
 }
 
 /* Estilos específicos para a tabela de regionais */
@@ -1305,105 +1354,182 @@ body {
 
 /* Layout da tabela de estatísticas com gráfico */
 .table-container:has(#regionaisTable) {
-  display: flex;
-  flex-direction: row;
-  align-items: center; /* Centraliza verticalmente os elementos */
+  display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: 2rem;
   width: 100%;
   max-width: 100%;
-  min-height: 600px; /* Altura mínima para garantir alinhamento */
+  min-height: 600px;
   box-sizing: border-box;
-  overflow: hidden;
+  margin-bottom: 2rem;
 }
 
 .table-container:has(#regionaisTable) h3 {
-  text-align: left;
-  width: 100%;
-  margin-bottom: 1rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+  margin-bottom: 1.5rem;
+  padding: 0 0.5rem;
 }
 
 .table-container:has(#regionaisTable) .table-wrapper {
-  width: auto;
-  max-width: 100%;
+  width: 100%;
   overflow-x: auto;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  height: 100%;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
   box-sizing: border-box;
 }
 
 /* Container do gráfico */
 .chart-container-regionais {
-  flex: 1;
-  min-width: 400px;
-  max-width: 700px;
+  width: 100%;
   background: white;
-  padding: 2rem;
-  border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-  border: 1px solid #e9ecef;
-  height: 600px; /* Altura fixa para o container do gráfico */
+  padding: 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
-  justify-content: center; /* Centraliza verticalmente o conteúdo */
+  gap: 1rem;
   box-sizing: border-box;
-  overflow: hidden;
+  min-height: 400px;
+}
+
+.chart-container-regionais h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
 }
 
 /* Título removido - estilos mantidos para compatibilidade */
 
 /* Seletor de estatísticas do gráfico */
 .chart-selector {
-  display: flex;
-  gap: 0.4rem;
-  margin-bottom: 2rem;
-  flex-wrap: wrap;
-  justify-content: center;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.75rem;
+  width: 100%;
+  margin-bottom: 0;
 }
 
 .chart-btn {
-  background: #f8f9fa;
-  border: 2px solid #e9ecef;
-  color: #495057;
-  padding: 0.4rem 0.8rem;
-  border-radius: 20px;
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
   cursor: pointer;
-  font-size: 0.8rem;
+  font-size: 0.875rem;
   font-weight: 500;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
   white-space: nowrap;
-  flex: 1;
-  min-width: 0;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
 }
 
 .chart-btn:hover {
-  background: #e9ecef;
+  background: #f3f4f6;
   border-color: #4e9b5a;
-  color: #4e9b5a;
+  color: #2d5a3d;
   transform: translateY(-1px);
-  box-shadow: 0 2px 4px rgba(78, 155, 90, 0.2);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .chart-btn.active {
   background: #4e9b5a;
   border-color: #3a7745;
   color: white;
-  box-shadow: 0 2px 6px rgba(78, 155, 90, 0.3);
+  box-shadow: 0 4px 6px rgba(78, 155, 90, 0.3);
 }
 
 .chart-btn.active:hover {
   background: #3a7745;
   transform: translateY(-1px);
-  box-shadow: 0 4px 8px rgba(78, 155, 90, 0.4);
+  box-shadow: 0 6px 8px rgba(78, 155, 90, 0.4);
 }
 
 .chart-container-regionais canvas {
   max-width: 100%;
   width: 100%;
-  height: 500px !important; /* Altura ainda maior para o canvas */
-  max-height: 500px !important;
-  flex: 1;
+  height: 300px !important;
+  max-height: 300px !important;
+  border-radius: 8px;
+}
+
+/* Container do gráfico de pizza */
+.pie-chart-container {
+  margin-top: 1.5rem;
+  padding: 1.5rem;
+  background: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.pie-chart-container h4 {
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #374151;
+  text-align: center;
+}
+
+/* Seletor de estatísticas do gráfico de pizza */
+.pie-chart-selector {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 0.5rem;
+  width: 100%;
+  margin-bottom: 1rem;
+}
+
+.pie-chart-btn {
+  background: #ffffff;
+  border: 1px solid #d1d5db;
+  color: #374151;
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 0.75rem;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+}
+
+.pie-chart-btn:hover {
+  background: #f3f4f6;
+  border-color: #4e9b5a;
+  color: #2d5a3d;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.pie-chart-btn.active {
+  background: #4e9b5a;
+  border-color: #3a7745;
+  color: white;
+  box-shadow: 0 2px 4px rgba(78, 155, 90, 0.3);
+}
+
+.pie-chart-btn.active:hover {
+  background: #3a7745;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(78, 155, 90, 0.4);
+}
+
+.pie-chart-container canvas {
+  max-width: 100%;
+  width: 100%;
+  height: 250px !important;
+  max-height: 250px !important;
+  border-radius: 8px;
 }
 
 /* Estilos para colunas ordenáveis */
@@ -1671,40 +1797,58 @@ body {
 
   /* Layout responsivo para tabela com gráfico */
   .table-container:has(#regionaisTable) {
-    flex-direction: column;
-    gap: 1rem;
-    min-height: auto; /* Remove altura mínima em mobile */
-    align-items: stretch; /* Estica os elementos em mobile */
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+    min-height: auto;
     width: 100%;
     max-width: 100%;
-    overflow: hidden;
   }
 
   .chart-container-regionais {
     min-width: auto;
     max-width: 100%;
     width: 100%;
-    height: 450px; /* Altura otimizada para mobile */
-    justify-content: center; /* Mantém centralização em mobile */
+    height: auto;
+    min-height: 350px;
+    justify-content: flex-start; /* Alinha no topo em mobile */
     box-sizing: border-box;
-    overflow: hidden;
+    overflow: visible;
+    padding: 1rem;
   }
 
   .chart-container-regionais canvas {
-    height: 400px !important;
-    max-height: 400px !important;
+    height: 300px !important;
+    max-height: 300px !important;
+  }
+  
+  .pie-chart-container {
+    margin-top: 1rem;
+    padding: 1rem;
+  }
+  
+  .pie-chart-container canvas {
+    height: 200px !important;
+    max-height: 200px !important;
+  }
+  
+  .pie-chart-selector {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.4rem;
+  }
+  
+  .pie-chart-btn {
+    padding: 0.4rem 0.6rem;
+    font-size: 0.7rem;
   }
 
   .chart-selector {
-    flex-direction: column;
-    gap: 0.4rem;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.5rem;
   }
 
   .chart-btn {
-    flex: none;
-    width: 100%;
-    padding: 0.6rem 1rem;
-    font-size: 0.85rem;
+    padding: 0.625rem 0.75rem;
+    font-size: 0.75rem;
   }
   
   .table-wrapper {
@@ -1770,6 +1914,36 @@ body {
   #regionaisTable td:first-child {
     min-width: 80px;
     max-width: 120px;
+  }
+  
+  .chart-selector {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+  
+  .chart-btn {
+    padding: 0.75rem 1rem;
+    font-size: 0.75rem;
+  }
+  
+  .pie-chart-container {
+    margin-top: 0.75rem;
+    padding: 0.75rem;
+  }
+  
+  .pie-chart-container canvas {
+    height: 180px !important;
+    max-height: 180px !important;
+  }
+  
+  .pie-chart-selector {
+    grid-template-columns: 1fr;
+    gap: 0.3rem;
+  }
+  
+  .pie-chart-btn {
+    padding: 0.5rem 0.75rem;
+    font-size: 0.7rem;
   }
   
   .table-container h3 {

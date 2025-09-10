@@ -114,11 +114,11 @@
             <h3>Total de Defensorias</h3>
             <span id="totalOrgaos" class="stat-number">-</span>
           </div>
-          <div class="stat-card">
+          <div class="stat-card clickable-stat" id="statDefensoriasVagas" onclick="scrollToSection('vagasTable')">
             <h3>Defensorias Vagas</h3>
             <span id="orgaosVagos" class="stat-number">-</span>
           </div>
-          <div class="stat-card">
+          <div class="stat-card clickable-stat" id="statTitularesAfastados" onclick="scrollToSection('afastadosTable')">
             <h3>Titulares Afastados</h3>
             <span id="titularesAfastados" class="stat-number">-</span>
           </div>
@@ -173,29 +173,45 @@
               </div>
             </div>
             <div class="chart-container-regionais">
+              <h4>Distribuição Percentual por Regional</h4>
+              
               <!-- Botões de seleção de estatística -->
               <div class="chart-selector">
-                <button class="chart-btn active" data-stat="total-vagas" onclick="changeChartType('total-vagas')">
-                  Vagas
-                </button>
-                <button class="chart-btn" data-stat="percent-vagas" onclick="changeChartType('percent-vagas')">
-                  % Vagas
-                </button>
-                <button class="chart-btn" data-stat="total-afastados" onclick="changeChartType('total-afastados')">
-                  Afastados
+                <button class="chart-btn active" data-stat="percent-vagas" onclick="changeChartType('percent-vagas')">
+                  % Defensorias Vagas
                 </button>
                 <button class="chart-btn" data-stat="percent-afastados" onclick="changeChartType('percent-afastados')">
-                  % Afastados
-                </button>
-                <button class="chart-btn" data-stat="total-prejudicadas" onclick="changeChartType('total-prejudicadas')">
-                  Total
+                  % Titulares Afastados
                 </button>
                 <button class="chart-btn" data-stat="percent-prejudicadas" onclick="changeChartType('percent-prejudicadas')">
-                  % Total
+                  % Vagas + Afastados
                 </button>
               </div>
               
               <canvas id="regionaisChart"></canvas>
+              
+              <!-- Segundo gráfico de colunas -->
+              <div class="chart-container-regionais">
+                <h4>Distribuição Absoluta por Regional</h4>
+                
+                <!-- Botões de seleção de estatística para colunas -->
+                <div class="chart-selector">
+                  <button class="chart-btn active" data-stat="total-defensorias" onclick="changeAbsolutoChartType('total-defensorias')">
+                    Defensorias
+                  </button>
+                  <button class="chart-btn" data-stat="total-vagas" onclick="changeAbsolutoChartType('total-vagas')">
+                    Defensorias Vagas
+                  </button>
+                  <button class="chart-btn" data-stat="total-afastados" onclick="changeAbsolutoChartType('total-afastados')">
+                    Titulares Afastados
+                  </button>
+                  <button class="chart-btn" data-stat="total-prejudicadas" onclick="changeAbsolutoChartType('total-prejudicadas')">
+                    Vagas + Afastados
+                  </button>
+                </div>
+                
+                <canvas id="regionaisAbsolutoChart"></canvas>
+              </div>
             </div>
           </div>
 
@@ -708,7 +724,10 @@
       });
 
       // Criar o gráfico inicial (total de vagas)
-      createRegionaisChart('total-vagas');
+      createRegionaisChart('percent-vagas');
+      
+      // Criar o segundo gráfico de colunas (valores absolutos)
+      createRegionaisAbsolutoChart('total-defensorias');
       
       // Calcular e exibir totais no rodapé
       renderRegionaisFooter();
@@ -754,7 +773,7 @@
       // Renderizar rodapé
       tfoot.innerHTML = `
         <tr>
-          <td>TOTAL GERAL</td>
+          <td>Total Geral</td>
           <td>${totalDefensorias}</td>
           <td>${totalVagas}</td>
           <td><span class="percent-problemas ${vagasClass}">${percentVagas}%</span></td>
@@ -914,6 +933,106 @@
       });
     }
 
+    // Função para criar o segundo gráfico de colunas (valores absolutos)
+    function createRegionaisAbsolutoChart(statType = 'total-defensorias') {
+      const ctx = document.getElementById('regionaisAbsolutoChart');
+      if (!ctx || !chartData.labels.length) return;
+
+      // Destruir gráfico existente se houver
+      if (window.regionaisAbsolutoChartInstance) {
+        window.regionaisAbsolutoChartInstance.destroy();
+      }
+
+      // Determinar dados baseado no tipo de estatística
+      let data, colors, label, tooltipSuffix;
+      
+      switch(statType) {
+        case 'total-defensorias':
+          data = chartData.labels.map((label, index) => {
+            const regional = dashboardData.regionais.find(r => r.nome === label);
+            return regional ? parseInt(regional.total_defensorias) || 0 : 0;
+          });
+          colors = chartData.colors.totalVagas;
+          label = 'Defensorias';
+          tooltipSuffix = ' defensorias';
+          break;
+        case 'total-vagas':
+          data = chartData.totalVagas;
+          colors = chartData.colors.totalVagas;
+          label = 'Defensorias Vagas';
+          tooltipSuffix = ' vagas';
+          break;
+        case 'total-afastados':
+          data = chartData.totalAfastados;
+          colors = chartData.colors.totalAfastados;
+          label = 'Titulares Afastados';
+          tooltipSuffix = ' afastados';
+          break;
+        case 'total-prejudicadas':
+          data = chartData.totalPrejudicadas;
+          colors = chartData.colors.totalPrejudicadas;
+          label = 'Vagas + Afastados';
+          tooltipSuffix = ' prejudicadas';
+          break;
+        default:
+          return;
+      }
+
+      window.regionaisAbsolutoChartInstance = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: chartData.labels,
+          datasets: [{
+            label: label,
+            data: data,
+            backgroundColor: colors,
+            borderColor: colors,
+            borderWidth: 1,
+            borderRadius: 4,
+            borderSkipped: false,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              display: false
+            },
+            tooltip: {
+              callbacks: {
+                label: function(context) {
+                  const label = context.label || '';
+                  const value = context.parsed.y;
+                  return `${label}: ${value}${tooltipSuffix}`;
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              ticks: {
+                stepSize: 1
+              }
+            }
+          }
+        }
+      });
+    }
+
+    // Função para trocar o tipo do segundo gráfico de colunas
+    function changeAbsolutoChartType(statType) {
+      // Atualizar botões ativos
+      document.querySelectorAll('.chart-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      document.querySelector(`[data-stat="${statType}"]`).classList.add('active');
+      
+      // Atualizar gráfico
+      createRegionaisAbsolutoChart(statType);
+    }
+
     // Função para trocar o tipo de gráfico
     function changeChartType(statType) {
       // Atualizar botões ativos
@@ -1063,6 +1182,43 @@
       
       // Reordenar linhas na tabela
       rows.forEach(row => tbody.appendChild(row));
+    }
+
+    // Função para rolar até uma seção e expandir automaticamente
+    function scrollToSection(tableId) {
+      // Encontrar o wrapper da tabela
+      const tableWrapper = document.getElementById(tableId);
+      if (!tableWrapper) return;
+
+      // Encontrar o container da tabela
+      const tableContainer = tableWrapper.closest('.table-container');
+      if (!tableContainer) return;
+
+      // Verificar se a tabela está colapsada (display: none)
+      const isCollapsed = tableWrapper.style.display === 'none' || 
+                         window.getComputedStyle(tableWrapper).display === 'none';
+      
+      if (isCollapsed) {
+        // Expandir a tabela usando a função toggleTable
+        toggleTable(tableId);
+      }
+
+      // Aguardar um pouco para a animação de expansão
+      setTimeout(() => {
+        // Scroll suave até a seção
+        tableContainer.scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'start' 
+        });
+
+        // Destacar brevemente a seção
+        tableContainer.style.transition = 'box-shadow 0.3s ease';
+        tableContainer.style.boxShadow = '0 0 20px rgba(40, 167, 69, 0.5)';
+        
+        setTimeout(() => {
+          tableContainer.style.boxShadow = '';
+        }, 2000);
+      }, 100);
     }
   </script>
   <script src="script.js?v=1.1"></script>

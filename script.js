@@ -328,38 +328,17 @@ function searchUnit() {
       .map(u => ({ ...u, orgaos: u.orgaos.filter(o => o.titular.vaga === true) }))
       .filter(u => u.orgaos.length > 0);
     
-    let message = "🔎 Exibindo apenas Defensorias vagas.";
-    if (selectedRegionais.length > 0) {
-      const regionaisNomes = selectedRegionais.map(id => 
-        regionais.find(r => r.id === id)?.nome
-      ).filter(Boolean).join(', ');
-      message += ` (Regionais: ${regionaisNomes})`;
-    }
-    displayUnits(filtered, message);
+    displayUnits(filtered, "");
 
   } else if (selectedFilter === "afastados") {
     filtered = filtered
       .map(u => ({ ...u, orgaos: u.orgaos.filter(o => o.titular.afastado === true) }))
       .filter(u => u.orgaos.length > 0);
     
-    let message = "🔎 Exibindo apenas Defensorias com titulares afastados.";
-    if (selectedRegionais.length > 0) {
-      const regionaisNomes = selectedRegionais.map(id => 
-        regionais.find(r => r.id === id)?.nome
-      ).filter(Boolean).join(', ');
-      message += ` (Regionais: ${regionaisNomes})`;
-    }
-    displayUnits(filtered, message);
+    displayUnits(filtered, "");
 
   } else {
-    let message = "";
-    if (selectedRegionais.length > 0) {
-      const regionaisNomes = selectedRegionais.map(id => 
-        regionais.find(r => r.id === id)?.nome
-      ).filter(Boolean).join(', ');
-      message = `🔎 Exibindo unidades das regionais: ${regionaisNomes}`;
-    }
-    displayUnits(filtered, message);
+    displayUnits(filtered, "");
   }
 }
 
