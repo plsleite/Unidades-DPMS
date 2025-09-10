@@ -1039,6 +1039,11 @@ function openOrgaoModal(orgaoId = null) {
   } else {
     title.textContent = 'Nova Defensoria';
     form.reset();
+    // Limpar campos específicos
+    document.getElementById('dataVacanciaField').style.display = 'none';
+    document.getElementById('portariaVacanciaField').style.display = 'none';
+    document.getElementById('orgaoDataVacancia').value = '';
+    document.getElementById('orgaoPortariaVacancia').value = '';
   }
   
   modal.style.display = 'block';
@@ -1083,9 +1088,14 @@ async function loadOrgaoData(orgaoId) {
       const isVaga = orgao.vaga || false;
       document.getElementById('orgaoVaga').checked = isVaga;
       
+      // Configurar exibição dos campos baseado no status da defensoria
+      const isTitularAfastado = orgao.titular_afastado || false;
+      
       if (isVaga) {
         document.getElementById('titularFields').style.display = 'none';
         document.getElementById('substitutoFields').style.display = 'block';
+        document.getElementById('dataVacanciaField').style.display = 'block';
+        document.getElementById('portariaVacanciaField').style.display = 'block';
         document.getElementById('orgaoTitularNome').required = false;
         document.getElementById('orgaoTitularEmail').required = false;
         document.getElementById('orgaoSubstitutoNome').required = true;
@@ -1094,8 +1104,36 @@ async function loadOrgaoData(orgaoId) {
         document.getElementById('orgaoTitularEmail').value = '';
       } else {
         document.getElementById('titularFields').style.display = 'block';
+        document.getElementById('dataVacanciaField').style.display = 'none';
+        document.getElementById('portariaVacanciaField').style.display = 'none';
         document.getElementById('orgaoTitularNome').required = true;
         document.getElementById('orgaoTitularEmail').required = true;
+        
+        // Se o titular está afastado, mostrar campos substituto
+        if (isTitularAfastado) {
+          document.getElementById('substitutoFields').style.display = 'block';
+          document.getElementById('orgaoSubstitutoNome').required = true;
+          document.getElementById('orgaoSubstitutoEmail').required = true;
+        } else {
+          document.getElementById('substitutoFields').style.display = 'none';
+          document.getElementById('orgaoSubstitutoNome').required = false;
+          document.getElementById('orgaoSubstitutoEmail').required = false;
+        }
+      }
+      
+      // Preencher campos de vacância APÓS configurar a exibição
+      if (orgao.data_vacancia) {
+        // Converter data para formato YYYY-MM-DD para input type="date"
+        const dataFormatada = new Date(orgao.data_vacancia).toISOString().split('T')[0];
+        document.getElementById('orgaoDataVacancia').value = dataFormatada;
+      } else {
+        document.getElementById('orgaoDataVacancia').value = '';
+      }
+      
+      if (orgao.portaria_vacancia) {
+        document.getElementById('orgaoPortariaVacancia').value = orgao.portaria_vacancia;
+      } else {
+        document.getElementById('orgaoPortariaVacancia').value = '';
       }
       
       // Titular
@@ -1103,18 +1141,7 @@ async function loadOrgaoData(orgaoId) {
       document.getElementById('orgaoTitularEmail').value = orgao.titular_email || '';
       document.getElementById('orgaoTitularAfastado').checked = orgao.titular_afastado || false;
       
-      // Substituto
-      const isTitularAfastado = orgao.titular_afastado || false;
-      if (isVaga || isTitularAfastado) {
-        document.getElementById('substitutoFields').style.display = 'block';
-        document.getElementById('orgaoSubstitutoNome').required = true;
-        document.getElementById('orgaoSubstitutoEmail').required = true;
-      } else {
-        document.getElementById('substitutoFields').style.display = 'none';
-        document.getElementById('orgaoSubstitutoNome').required = false;
-        document.getElementById('orgaoSubstitutoEmail').required = false;
-      }
-      
+      // Preencher campos substituto
       document.getElementById('orgaoSubstitutoNome').value = orgao.substituto_nome || '';
       document.getElementById('orgaoSubstitutoEmail').value = orgao.substituto_email || '';
     } else {
@@ -1224,6 +1251,8 @@ async function handleOrgaoSubmit(event) {
     titular_email: isVaga ? null : document.getElementById('orgaoTitularEmail').value,
     titular_afastado: isTitularAfastado,
     vaga: isVaga,
+    data_vacancia: isVaga ? document.getElementById('orgaoDataVacancia').value : null,
+    portaria_vacancia: isVaga ? document.getElementById('orgaoPortariaVacancia').value : null,
     substituto_nome: (isVaga || isTitularAfastado) ? document.getElementById('orgaoSubstitutoNome').value : null,
     substituto_email: (isVaga || isTitularAfastado) ? document.getElementById('orgaoSubstitutoEmail').value : null
   };
@@ -1318,22 +1347,36 @@ function setupConditionalFields() {
   const vagaCheckbox = document.getElementById('orgaoVaga');
   const titularFields = document.getElementById('titularFields');
   const substitutoFields = document.getElementById('substitutoFields');
+  const dataVacanciaField = document.getElementById('dataVacanciaField');
+  const portariaVacanciaField = document.getElementById('portariaVacanciaField');
   
-  if (vagaCheckbox && titularFields && substitutoFields) {
+  if (vagaCheckbox && titularFields && substitutoFields && dataVacanciaField && portariaVacanciaField) {
     vagaCheckbox.addEventListener('change', function() {
       if (this.checked) {
         titularFields.style.display = 'none';
         substitutoFields.style.display = 'block';
+        dataVacanciaField.style.display = 'block';
+        portariaVacanciaField.style.display = 'block';
         document.getElementById('orgaoTitularNome').required = false;
         document.getElementById('orgaoTitularEmail').required = false;
         document.getElementById('orgaoSubstitutoNome').required = true;
         document.getElementById('orgaoSubstitutoEmail').required = true;
         document.getElementById('orgaoTitularNome').value = '';
         document.getElementById('orgaoTitularEmail').value = '';
+        
+        // Definir data atual se não houver data definida
+        if (!document.getElementById('orgaoDataVacancia').value) {
+          const today = new Date().toISOString().split('T')[0];
+          document.getElementById('orgaoDataVacancia').value = today;
+        }
       } else {
         titularFields.style.display = 'block';
+        dataVacanciaField.style.display = 'none';
+        portariaVacanciaField.style.display = 'none';
         document.getElementById('orgaoTitularNome').required = true;
         document.getElementById('orgaoTitularEmail').required = true;
+        document.getElementById('orgaoDataVacancia').value = '';
+        document.getElementById('orgaoPortariaVacancia').value = '';
         checkSubstitutoFields();
       }
     });

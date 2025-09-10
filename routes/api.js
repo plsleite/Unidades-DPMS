@@ -310,6 +310,8 @@ router.get('/orgaos', async (req, res) => {
         o.titular_email,
         o.titular_afastado,
         o.vaga,
+        o.data_vacancia,
+        o.portaria_vacancia,
         o.substituto_nome,
         o.substituto_email,
         u.nome as unidade_nome
@@ -402,6 +404,8 @@ router.post('/orgaos', async (req, res) => {
       titular_email, 
       titular_afastado, 
       vaga, 
+      data_vacancia,
+      portaria_vacancia,
       substituto_nome, 
       substituto_email 
     } = req.body;
@@ -414,8 +418,8 @@ router.post('/orgaos', async (req, res) => {
     const sql = `
       INSERT INTO orgaos (
         nome, unidade_id, titular_nome, titular_email, 
-        titular_afastado, vaga, substituto_nome, substituto_email
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+        titular_afastado, vaga, data_vacancia, portaria_vacancia, substituto_nome, substituto_email
+      ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
     `;
 
@@ -426,6 +430,8 @@ router.post('/orgaos', async (req, res) => {
       titular_email || null, 
       titular_afastado || false, 
       vaga || false, 
+      data_vacancia || null,
+      portaria_vacancia || null,
       substituto_nome || null, 
       substituto_email || null
     ];
@@ -455,6 +461,8 @@ router.put('/orgaos/:id', async (req, res) => {
       titular_email, 
       titular_afastado, 
       vaga, 
+      data_vacancia,
+      portaria_vacancia,
       substituto_nome, 
       substituto_email 
     } = req.body;
@@ -472,9 +480,11 @@ router.put('/orgaos/:id', async (req, res) => {
         titular_email = $4, 
         titular_afastado = $5, 
         vaga = $6, 
-        substituto_nome = $7, 
-        substituto_email = $8
-      WHERE id = $9
+        data_vacancia = $7,
+        portaria_vacancia = $8,
+        substituto_nome = $9, 
+        substituto_email = $10
+      WHERE id = $11
       RETURNING *
     `;
 
@@ -485,6 +495,8 @@ router.put('/orgaos/:id', async (req, res) => {
       titular_email || null, 
       titular_afastado || false, 
       vaga || false, 
+      data_vacancia || null,
+      portaria_vacancia || null,
       substituto_nome || null, 
       substituto_email || null,
       id
@@ -596,6 +608,8 @@ router.get('/unidades-completas', async (req, res) => {
           titular_email,
           titular_afastado,
           vaga,
+          data_vacancia,
+          portaria_vacancia,
           substituto_nome,
           substituto_email
         FROM orgaos
