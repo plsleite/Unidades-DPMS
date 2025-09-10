@@ -1,7 +1,7 @@
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
-const { testConnection } = require('./database');
+const { testConnection } = require('./config/database');
 const config = require('./config');
 const apiRoutes = require('./routes/api');
 const authRoutes = require('./routes/auth');
@@ -15,11 +15,11 @@ app.use(express.json()); // Parse JSON
 app.use(express.urlencoded({ extended: true })); // Parse URL-encoded
 
 // Servir arquivos estáticos (frontend)
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Rota principal - servir o index.html
 app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'index.html'));
+  res.sendFile(path.join(__dirname, '../public/index.html'));
 });
 
 // Rota de teste da API
