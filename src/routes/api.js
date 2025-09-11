@@ -1230,4 +1230,73 @@ router.delete('/regionais/:id', async (req, res) => {
   }
 });
 
+// =========================
+// ENDPOINTS DE MONITORAMENTO
+// =========================
+
+// GET /api/test - Teste básico da API
+router.get('/test', (req, res) => {
+  res.json({ 
+    message: 'API da Defensoria Pública MS funcionando!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// GET /api/test-db - Teste de conexão com banco
+router.get('/test-db', async (req, res) => {
+  try {
+    const result = await query('SELECT NOW() as current_time');
+    res.json({
+      database: 'Conectado',
+      timestamp: result.rows[0].current_time
+    });
+  } catch (error) {
+    res.status(500).json({
+      database: 'Erro',
+      error: error.message
+    });
+  }
+});
+
+// GET /api/metrics - Métricas reais do sistema
+router.get('/metrics', (req, res) => {
+  const memUsage = process.memoryUsage();
+  const uptime = process.uptime();
+  
+  // Obter contadores de conexões do servidor principal
+  const connections = req.app.locals.connections || { active: 0, total: 0, peak: 0 };
+  
+  res.json({
+    memory: {
+      used: Math.round(memUsage.heapUsed / 1024 / 1024), // MB
+      total: Math.round(memUsage.heapTotal / 1024 / 1024), // MB
+      external: Math.round(memUsage.external / 1024 / 1024) // MB
+    },
+    uptime: {
+      seconds: Math.round(uptime),
+      formatted: formatUptime(uptime)
+    },
+    connections: {
+      active: connections.active,
+      total: connections.total,
+      peak: connections.peak
+    },
+    node: {
+      version: process.version,
+      platform: process.platform
+    },
+    timestamp: new Date().toISOString()
+  });
+});
+
+// Função para formatar uptime
+function formatUptime(seconds) {
+  const days = Math.floor(seconds / 86400);
+  const hours = Math.floor((seconds % 86400) / 3600);
+  const minutes = Math.floor((seconds % 3600) / 60);
+  const secs = Math.floor(seconds % 60);
+  
+  return `${days}d ${hours}h ${minutes}m ${secs}s`;
+}
+
 module.exports = router;

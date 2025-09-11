@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# Git Hook: Pre-commit
+# Executa testes automaticamente antes de cada commit
+
+set -e
+
+echo "🔍 Executando testes antes do commit..."
+
+# Cores para output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+BLUE='\033[0;34m'
+NC='\033[0m' # No Color
+
+# Função para log
+log() {
+    echo -e "${BLUE}[PRE-COMMIT]${NC} $1"
+}
+
+error() {
+    echo -e "${RED}[ERROR]${NC} $1"
+}
+
+success() {
+    echo -e "${GREEN}[SUCCESS]${NC} $1"
+}
+
+warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+# Verificar se estamos no diretório correto
+if [ ! -f "package.json" ]; then
+    error "Execute este hook na raiz do projeto"
+    exit 1
+fi
+
+# Verificar se há mudanças para commitar
+if git diff --cached --quiet; then
+    warning "Nenhuma mudança para commitar"
+    exit 0
+fi
+
+log "Verificando arquivos modificados..."
+
+# Verificar se há mudanças em arquivos de teste ou código
+if git diff --cached --name-only | grep -E '\.(js|ts|json)$' | grep -v 'package-lock.json' > /dev/null; then
+    log "Arquivos de código modificados detectados"
+    
+    # Executar testes unitários (mais rápidos)
+    log "Executando testes unitários..."
+    if npm test tests/unit/; then
+        success "Testes unitários passaram!"
+    else
+        error "Testes unitários falharam! Commit cancelado."
+        echo ""
+        echo "Para pular os testes, use: git commit --no-verify"
+        echo "Para executar todos os testes: npm test"
+        exit 1
+    fi
+    
+    # Executar linting se disponível
+    if npm list eslint &> /dev/null; then
+        log "Executando linting..."
+        if npx eslint src/ tests/ --quiet; then
+            success "Linting passou!"
+        else
+            error "Linting falhou! Commit cancelado."
+            echo ""
+            echo "Para pular os testes, use: git commit --no-verify"
+            echo "Para corrigir automaticamente: npx eslint src/ tests/ --fix"
+            exit 1
+        fi
+    else
+        warning "ESLint não está instalado, pulando linting..."
+    fi
+    
+    success "Todos os testes passaram! Commit permitido."
+else
+    log "Nenhum arquivo de código modificado, pulando testes"
+fi
+
+echo ""
+success "✅ Commit autorizado!"

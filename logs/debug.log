@@ -1,0 +1,10 @@
+{"timestamp":"2025-09-11T03:07:36.187Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T03:09:09.495Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T03:09:30.515Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T03:09:30.527Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}
+{"timestamp":"2025-09-11T03:09:40.559Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T03:09:40.568Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}
+{"timestamp":"2025-09-11T03:12:56.840Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T03:12:56.851Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}
+{"timestamp":"2025-09-11T04:07:28.798Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T04:07:28.809Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}

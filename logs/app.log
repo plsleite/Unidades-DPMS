@@ -1,0 +1,9 @@
+{"timestamp":"2025-09-11T04:07:28.810Z","level":"INFO","message":"Admin Action","action":"create_user","username":"admin","details":{"userId":456}}
+{"timestamp":"2025-09-11T04:07:36.635Z","level":"INFO","message":"🚀 Servidor rodando na porta 3000"}
+{"timestamp":"2025-09-11T04:07:36.652Z","level":"INFO","message":"🌐 Acesse: http://localhost:3000"}
+{"timestamp":"2025-09-11T04:07:36.654Z","level":"INFO","message":"📊 API: http://localhost:3000/api/test"}
+{"timestamp":"2025-09-11T04:08:05.855Z","level":"INFO","message":"API Request","method":"GET","url":"/api/test","ip":"::1","userAgent":"curl/8.7.1","statusCode":200,"responseTime":"2ms"}
+{"timestamp":"2025-09-11T04:08:12.535Z","level":"INFO","message":"API Request","method":"GET","url":"/metrics","ip":"::1","userAgent":"curl/8.7.1","statusCode":200,"responseTime":"1ms"}
+{"timestamp":"2025-09-11T04:08:30.582Z","level":"INFO","message":"API Request","method":"GET","url":"/api/test","ip":"::1","userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36","statusCode":200,"responseTime":"1ms"}
+{"timestamp":"2025-09-11T04:08:30.585Z","level":"INFO","message":"API Request","method":"GET","url":"/metrics","ip":"::1","userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36","statusCode":200,"responseTime":"3ms"}
+{"timestamp":"2025-09-11T04:08:30.606Z","level":"INFO","message":"API Request","method":"GET","url":"/api/test-db","ip":"::1","userAgent":"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Safari/537.36","statusCode":200,"responseTime":"14ms"}

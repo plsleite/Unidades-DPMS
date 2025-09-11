@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Monitoramento - Sistema DPMS</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>📊 Dashboard de Monitoramento</h1>
+        
+        <!-- Status Geral -->
+        <div class="monitoring-section">
+            <h2>🔍 Status do Sistema</h2>
+            <div class="status-grid">
+                <div class="status-card" id="apiStatus">
+                    <h3>API</h3>
+                    <span class="status-indicator" id="apiIndicator">🟡</span>
+                    <span id="apiText">Verificando...</span>
+                </div>
+                <div class="status-card" id="dbStatus">
+                    <h3>Banco de Dados</h3>
+                    <span class="status-indicator" id="dbIndicator">🟡</span>
+                    <span id="dbText">Verificando...</span>
+                </div>
+                <div class="status-card" id="serverStatus">
+                    <h3>Servidor</h3>
+                    <span class="status-indicator" id="serverIndicator">🟡</span>
+                    <span id="serverText">Verificando...</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Métricas de Performance -->
+        <div class="monitoring-section">
+            <h2>⚡ Performance</h2>
+            <div class="metrics-grid">
+                <div class="metric-card">
+                    <h3>Tempo de Resposta</h3>
+                    <span id="responseTime">-</span>
+                </div>
+                <div class="metric-card">
+                    <h3>Uso de Memória</h3>
+                    <span id="memoryUsage">-</span>
+                </div>
+                <div class="metric-card">
+                    <h3>Conexões Ativas</h3>
+                    <span id="activeConnections">-</span>
+                </div>
+                <div class="metric-card">
+                    <h3>Total de Conexões</h3>
+                    <span id="requestsPerMinute">-</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Recentes -->
+        <div class="monitoring-section">
+            <h2>📝 Logs Recentes</h2>
+            <div class="logs-container">
+                <div id="recentLogs" class="logs-list">
+                    <!-- Logs serão carregados aqui -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Alertas -->
+        <div class="monitoring-section">
+            <h2>🚨 Alertas</h2>
+            <div id="alertsContainer" class="alerts-container">
+                <!-- Alertas serão carregados aqui -->
+            </div>
+        </div>
+
+        <!-- Gráficos -->
+        <div class="monitoring-section">
+            <h2>📈 Gráficos de Performance</h2>
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <canvas id="responseTimeChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="memoryChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variáveis globais
+        let responseTimeChart, memoryChart;
+        let monitoringData = {
+            responseTimes: [],
+            memoryUsage: [],
+            timestamps: []
+        };
+
+        // Inicializar monitoramento
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeMonitoring();
+            startPeriodicChecks();
+        });
+
+        // Inicializar componentes
+        function initializeMonitoring() {
+            initializeCharts();
+            checkSystemStatus();
+        }
+
+        // Verificar status do sistema
+        async function checkSystemStatus() {
+            try {
+                // Verificar API
+                const start = Date.now();
+                const response = await fetch('/api/test');
+                const responseTime = Date.now() - start;
+                
+                if (response.ok) {
+                    updateStatus('api', 'online', 'Online');
+                    updateResponseTime(responseTime);
+                } else {
+                    updateStatus('api', 'error', 'Erro');
+                }
+
+                // Verificar banco
+                const dbResponse = await fetch('/api/test-db');
+                if (dbResponse.ok) {
+                    const dbData = await dbResponse.json();
+                    updateStatus('db', dbData.database === 'Conectado' ? 'online' : 'error', dbData.database);
+                } else {
+                    updateStatus('db', 'error', 'Erro');
+                }
+
+                // Verificar servidor
+                updateStatus('server', 'online', 'Online');
+
+            } catch (error) {
+                console.error('Erro ao verificar status:', error);
+                updateStatus('api', 'error', 'Offline');
+                updateStatus('db', 'error', 'Offline');
+                updateStatus('server', 'error', 'Offline');
+            }
+        }
+
+        // Atualizar status visual
+        function updateStatus(component, status, text) {
+            const indicator = document.getElementById(`${component}Indicator`);
+            const textElement = document.getElementById(`${component}Text`);
+            
+            indicator.textContent = status === 'online' ? '🟢' : '🔴';
+            textElement.textContent = text;
+        }
+
+        // Atualizar tempo de resposta
+        function updateResponseTime(time) {
+            document.getElementById('responseTime').textContent = `${time}ms`;
+            monitoringData.responseTimes.push(time);
+            monitoringData.timestamps.push(new Date().toLocaleTimeString());
+            
+            // Manter apenas últimos 20 valores
+            if (monitoringData.responseTimes.length > 20) {
+                monitoringData.responseTimes.shift();
+                monitoringData.timestamps.shift();
+            }
+            
+            updateCharts();
+        }
+
+        // Inicializar gráficos
+        function initializeCharts() {
+            // Gráfico de tempo de resposta
+            const responseCtx = document.getElementById('responseTimeChart').getContext('2d');
+            responseTimeChart = new Chart(responseCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Tempo de Resposta (ms)',
+                        data: [],
+                        borderColor: 'rgb(75, 192, 192)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+
+            // Gráfico de memória
+            const memoryCtx = document.getElementById('memoryChart').getContext('2d');
+            memoryChart = new Chart(memoryCtx, {
+                type: 'line',
+                data: {
+                    labels: [],
+                    datasets: [{
+                        label: 'Uso de Memória (MB)',
+                        data: [],
+                        borderColor: 'rgb(255, 99, 132)',
+                        tension: 0.1
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: {
+                        y: {
+                            beginAtZero: true
+                        }
+                    }
+                }
+            });
+        }
+
+        // Atualizar gráficos
+        function updateCharts() {
+            if (responseTimeChart) {
+                responseTimeChart.data.labels = monitoringData.timestamps;
+                responseTimeChart.data.datasets[0].data = monitoringData.responseTimes;
+                responseTimeChart.update();
+            }
+
+            if (memoryChart) {
+                // Simular uso de memória (em produção, pegar dados reais)
+                const memoryUsage = Math.random() * 100 + 50;
+                monitoringData.memoryUsage.push(memoryUsage);
+                
+                if (monitoringData.memoryUsage.length > 20) {
+                    monitoringData.memoryUsage.shift();
+                }
+                
+                memoryChart.data.labels = monitoringData.timestamps;
+                memoryChart.data.datasets[0].data = monitoringData.memoryUsage;
+                memoryChart.update();
+            }
+        }
+
+        // Verificações periódicas
+        function startPeriodicChecks() {
+            // Verificar status a cada 30 segundos
+            setInterval(checkSystemStatus, 30000);
+            
+            // Atualizar métricas a cada 10 segundos
+            setInterval(updateMetrics, 10000);
+        }
+
+        // Atualizar métricas com dados reais
+        async function updateMetrics() {
+            try {
+                const response = await fetch('/api/metrics');
+                if (response.ok) {
+                    const data = await response.json();
+                    
+                    // Atualizar uso de memória real
+                    document.getElementById('memoryUsage').textContent = `${data.memory.used} MB`;
+                    
+                    // Mostrar conexões ativas reais
+                    document.getElementById('activeConnections').textContent = `${data.connections.active} ativas`;
+                    
+                    // Mostrar total de conexões
+                    document.getElementById('requestsPerMinute').textContent = `${data.connections.total} total`;
+                    
+                    // Atualizar dados para gráficos
+                    monitoringData.memoryUsage.push(data.memory.used);
+                    if (monitoringData.memoryUsage.length > 20) {
+                        monitoringData.memoryUsage.shift();
+                    }
+                    
+                    updateCharts();
+                } else {
+                    // Fallback para dados simulados se API falhar
+                    document.getElementById('memoryUsage').textContent = 'Erro';
+                    document.getElementById('activeConnections').textContent = 'Erro';
+                    document.getElementById('requestsPerMinute').textContent = 'Erro';
+                }
+            } catch (error) {
+                console.error('Erro ao buscar métricas:', error);
+                // Fallback para dados simulados
+                document.getElementById('memoryUsage').textContent = 'Offline';
+                document.getElementById('activeConnections').textContent = 'Offline';
+                document.getElementById('requestsPerMinute').textContent = 'Offline';
+            }
+        }
+
+        // Carregar logs recentes
+        function loadRecentLogs() {
+            // Em produção, buscar logs reais da API
+            const logs = [
+                { time: '14:30:25', level: 'INFO', message: 'Sistema iniciado' },
+                { time: '14:30:20', level: 'INFO', message: 'Banco conectado' },
+                { time: '14:29:15', level: 'WARN', message: 'Alta latência detectada' },
+                { time: '14:28:45', level: 'INFO', message: 'Usuário admin logou' }
+            ];
+
+            const logsContainer = document.getElementById('recentLogs');
+            logsContainer.innerHTML = logs.map(log => `
+                <div class="log-entry log-${log.level.toLowerCase()}">
+                    <span class="log-time">${log.time}</span>
+                    <span class="log-level">${log.level}</span>
+                    <span class="log-message">${log.message}</span>
+                </div>
+            `).join('');
+        }
+
+        // Carregar alertas
+        function loadAlerts() {
+            const alerts = [
+                { type: 'warning', message: 'Tempo de resposta acima de 2s' },
+                { type: 'info', message: 'Sistema funcionando normalmente' }
+            ];
+
+            const alertsContainer = document.getElementById('alertsContainer');
+            alertsContainer.innerHTML = alerts.map(alert => `
+                <div class="alert alert-${alert.type}">
+                    ${alert.message}
+                </div>
+            `).join('');
+        }
+
+        // Inicializar logs e alertas
+        loadRecentLogs();
+        loadAlerts();
+    </script>
+
+    <style>
+        .monitoring-section {
+            margin: 2rem 0;
+            padding: 1.5rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .status-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+        }
+
+        .status-card {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #f9f9f9;
+        }
+
+        .status-indicator {
+            font-size: 2rem;
+            margin: 0.5rem 0;
+        }
+
+        .metrics-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 1rem;
+        }
+
+        .metric-card {
+            text-align: center;
+            padding: 1rem;
+            background: #f0f8ff;
+            border-radius: 8px;
+        }
+
+        .logs-container {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 1rem;
+        }
+
+        .log-entry {
+            display: flex;
+            gap: 1rem;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .log-time {
+            font-family: monospace;
+            color: #666;
+        }
+
+        .log-level {
+            font-weight: bold;
+            min-width: 60px;
+        }
+
+        .log-info { color: #007bff; }
+        .log-warn { color: #ffc107; }
+        .log-error { color: #dc3545; }
+
+        .alerts-container {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            border-left: 4px solid;
+        }
+
+        .alert-warning {
+            background: #fff3cd;
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            border-color: #17a2b8;
+            color: #0c5460;
+        }
+
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+            gap: 2rem;
+        }
+
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+    </style>
+</body>
+</html>

@@ -6,7 +6,20 @@
   "scripts": {
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "test:unit": "jest tests/unit",
+    "test:integration": "jest tests/integration",
+    "test:all": "npm run test:unit && npm run test:integration",
+    "test:auto": "./scripts/test-automation.sh",
+    "test:daemon": "./scripts/test-daemon.sh",
+    "test:daemon:watch": "./scripts/test-daemon.sh -w tests/",
+    "test:daemon:lint": "./scripts/test-daemon.sh -l",
+    "lint": "eslint src/ tests/ --quiet",
+    "lint:fix": "eslint src/ tests/ --fix",
+    "precommit": "npm run test:unit && npm run lint",
+    "ci": "npm run test:all && npm run lint"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
@@ -19,7 +32,9 @@
     "pg": "^8.11.3"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "nodemon": "^3.0.1",
+    "jest": "^29.7.0",
+    "supertest": "^6.3.3"
   },
   "keywords": [
     "defensoria",
@@ -29,5 +44,14 @@
     "postgresql"
   ],
   "author": "Pedro Leite",
-  "license": "MIT"
+  "license": "MIT",
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "src/**/*.js",
+      "!src/server.js"
+    ],
+    "coverageDirectory": "coverage",
+    "coverageReporters": ["text", "lcov", "html"]
+  }
 }
