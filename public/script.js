@@ -178,7 +178,7 @@ function displayUnits(filteredUnits = unidades, message = "") {
   }
 
   if (!filteredUnits || filteredUnits.length === 0) {
-    container.innerHTML += "<p>Nenhuma unidade encontrada.</p>";
+    container.innerHTML += '<div class="no-data-message">Nenhuma unidade encontrada.</div>';
     return;
   }
 

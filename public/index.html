@@ -15,6 +15,16 @@
 
   <div class="container">
 
+    <!-- Botões de navegação -->
+    <div class="navigation-buttons">
+      <button id="unitsTab" class="nav-btn active" onclick="showSection('units')">
+        🏢 Unidades
+      </button>
+      <button id="vacancyTab" class="nav-btn" onclick="showSection('vacancy')">
+        📋 Ordem de Vacância
+      </button>
+    </div>
+
     <!-- Barra de busca centralizada -->
     <div class="search-bar">
       <input 
@@ -22,6 +32,16 @@
         id="searchInput" 
         placeholder="Pesquise por unidade, órgão ou defensor..." 
         onkeyup="searchUnit()" 
+      />
+    </div>
+
+    <!-- Barra de busca para ordem de vacância -->
+    <div class="search-bar" id="vacancySearchBar" style="display: none;">
+      <input 
+        type="text" 
+        id="vacancySearchInput" 
+        placeholder="Pesquise por defensoria, unidade ou substituto..." 
+        onkeyup="searchVacancyOrder()" 
       />
     </div>
 
@@ -54,8 +74,36 @@
       </div>
     </div>
 
-    <div id="unitList" class="unit-list">
-      <!-- Unidades aparecem aqui -->
+    <!-- Filtros por Entrância -->
+    <div class="filters" id="vacancyFilters" style="display: none;">
+      <label>
+        <input type="radio" name="vacancyFilter" value="todas" checked onchange="searchVacancyOrder()"> Todas Entrâncias
+      </label>
+      <label>
+        <input type="radio" name="vacancyFilter" value="2instancia" onchange="searchVacancyOrder()"> Segunda Instância
+      </label>
+      <label>
+        <input type="radio" name="vacancyFilter" value="especial" onchange="searchVacancyOrder()"> Entrância Especial
+      </label>
+      <label>
+        <input type="radio" name="vacancyFilter" value="segunda" onchange="searchVacancyOrder()"> Segunda Entrância
+      </label>
+      <label>
+        <input type="radio" name="vacancyFilter" value="primeira" onchange="searchVacancyOrder()"> Primeira Entrância
+      </label>
+    </div>
+
+
+    <!-- Seção de Unidades -->
+    <div id="unitsSection" class="units-section">
+      <div id="unitList" class="unit-list">
+        <!-- Unidades aparecem aqui -->
+      </div>
+    </div>
+
+    <!-- Seção de Ordem de Vacância -->
+    <div class="vacancy-order-container" id="vacancyOrderContainer" style="display: none;">
+      <div class="loading-message">Carregando ordem de vacância...</div>
     </div>
   </div>
 
@@ -1133,6 +1181,9 @@
 
     // Carregar dados do dashboard quando a página carregar (se já estiver na aba dashboard)
     document.addEventListener('DOMContentLoaded', function() {
+      // Aplicar centralização da barra de busca
+      applySearchBarCentering();
+      
       // Verificar se já estamos na aba dashboard
       const dashboardTab = document.getElementById('adminDashboard');
       if (dashboardTab && dashboardTab.classList.contains('active')) {
@@ -1140,6 +1191,8 @@
           loadDashboardData();
         }, 500);
       }
+      
+      // A seção de ordem de vacância será carregada apenas quando o usuário clicar no botão
     });
 
     // Função para ordenar tabelas
@@ -1229,6 +1282,317 @@
           tableContainer.style.boxShadow = '';
         }, 2000);
       }, 100);
+    }
+
+    // =========================
+    // FUNÇÕES DE NAVEGAÇÃO
+    // =========================
+
+    // Aplicar centralização da barra de busca
+    function applySearchBarCentering() {
+      const searchBars = document.querySelectorAll('.search-bar');
+      searchBars.forEach(searchBar => {
+        if (searchBar.style.display !== 'none') {
+          searchBar.style.display = 'flex';
+          searchBar.style.justifyContent = 'center';
+          searchBar.style.alignItems = 'center';
+          searchBar.style.width = '100%';
+        }
+      });
+    }
+
+    // Alternar entre seções
+    function showSection(section) {
+      const unitsSection = document.getElementById('unitsSection');
+      const vacancyOrderContainer = document.getElementById('vacancyOrderContainer');
+      const unitsTab = document.getElementById('unitsTab');
+      const vacancyTab = document.getElementById('vacancyTab');
+      const searchBar = document.getElementById('searchInput').parentElement;
+      const vacancySearchBar = document.getElementById('vacancySearchBar');
+      const filters = document.querySelector('.filters:not(#vacancyFilters)');
+      const vacancyFilters = document.getElementById('vacancyFilters');
+      const regionalFilters = document.querySelector('.regional-filters');
+
+      // Remover classe active de todos os botões
+      unitsTab.classList.remove('active');
+      vacancyTab.classList.remove('active');
+
+      if (section === 'units') {
+        // Mostrar seção de unidades
+        unitsSection.style.display = 'block';
+        vacancyOrderContainer.style.display = 'none';
+        unitsTab.classList.add('active');
+        
+        // Mostrar barra de busca e filtros das unidades
+        searchBar.style.display = 'flex';
+        vacancySearchBar.style.display = 'none';
+        filters.style.display = 'flex';
+        vacancyFilters.style.display = 'none';
+        regionalFilters.style.display = 'block';
+        
+        // Executar busca para atualizar a lista
+        searchUnit();
+      } else if (section === 'vacancy') {
+        // Mostrar seção de ordem de vacância
+        unitsSection.style.display = 'none';
+        vacancyOrderContainer.style.display = 'block';
+        vacancyTab.classList.add('active');
+        
+        // Mostrar barra de busca e filtros da ordem de vacância
+        searchBar.style.display = 'none';
+        vacancySearchBar.style.display = 'flex';
+        filters.style.display = 'none';
+        vacancyFilters.style.display = 'flex';
+        regionalFilters.style.display = 'none';
+        
+        // Aplicar centralização na barra de busca da ordem de vacância
+        applySearchBarCentering();
+        
+        // Carregar dados da ordem de vacância
+        loadVacancyOrder();
+      }
+    }
+
+    // =========================
+    // FUNÇÕES DE ORDEM DE VACÂNCIA
+    // =========================
+
+    // Variável global para armazenar dados da ordem de vacância
+    let vacancyOrderData = [];
+
+    // Carregar ordem de vacância
+    async function loadVacancyOrder() {
+      const container = document.getElementById('vacancyOrderContainer');
+      if (!container) return;
+
+      try {
+        container.innerHTML = '<div class="loading-message">Carregando ordem de vacância...</div>';
+        
+        const response = await fetch('/api/vacancias/ordem');
+        if (!response.ok) {
+          throw new Error(`Erro HTTP: ${response.status}`);
+        }
+        
+        const data = await response.json();
+        vacancyOrderData = data; // Armazenar dados globalmente
+        renderVacancyOrder(data);
+        
+      } catch (error) {
+        console.error('Erro ao carregar ordem de vacância:', error);
+        container.innerHTML = `
+          <div class="error-message">
+            ❌ Erro ao carregar ordem de vacância: ${error.message}
+            <button onclick="loadVacancyOrder()" class="retry-btn">Tentar novamente</button>
+          </div>
+        `;
+      }
+    }
+
+    // Renderizar ordem de vacância
+    function renderVacancyOrder(data) {
+      const container = document.getElementById('vacancyOrderContainer');
+      if (!container) return;
+
+      if (!data || data.length === 0) {
+        container.innerHTML = '<div class="no-data-message">Nenhuma defensoria vaga encontrada.</div>';
+        return;
+      }
+
+      let html = '';
+      
+      data.forEach(entrancia => {
+        if (entrancia.defensorias && entrancia.defensorias.length > 0) {
+          html += `
+            <div class="entrancia-group">
+              <h3 class="entrancia-title" onclick="toggleEntrancia(this)" style="cursor: pointer;">
+                <span class="entrancia-icon">▼</span>
+                ${entrancia.entrancia.nome}
+                <span class="entrancia-count">${entrancia.defensorias.length} ${entrancia.defensorias.length === 1 ? 'Defensoria Vaga' : 'Defensorias Vagas'}</span>
+              </h3>
+              <div class="defensorias-list" style="display: block;">
+          `;
+          
+          entrancia.defensorias.forEach((defensoria, index) => {
+            const dataVacancia = defensoria.data_vacancia ? 
+              new Date(defensoria.data_vacancia).toLocaleDateString('pt-BR') : 'N/A';
+            const tempoVacancia = calculateVacancyTime(defensoria.data_vacancia);
+            
+            html += `
+              <div class="defensoria-item">
+                <div class="defensoria-order">${index + 1}º</div>
+                <div class="defensoria-content">
+                  <div class="defensoria-info">
+                    <div class="defensoria-name">${defensoria.nome}</div>
+                    <div class="defensoria-unidade" style="font-style: normal;">${defensoria.unidade_nome}</div>
+                    ${defensoria.portaria_vacancia ? `<div class="defensoria-portaria">${defensoria.portaria_vacancia}</div>` : ''}
+                  </div>
+                  <div class="vacancy-tags">
+                    <span class="vacancy-date">📅 ${dataVacancia}</span>
+                    <span class="vacancy-days">⏰ ${tempoVacancia}</span>
+                    ${defensoria.substituto_nome ? `<span class="substituto">👤 ${defensoria.substituto_nome}</span>` : ''}
+                  </div>
+                </div>
+              </div>
+            `;
+          });
+          
+          html += `
+              </div>
+            </div>
+          `;
+        }
+      });
+
+      if (html === '') {
+        html = '<div class="no-data-message">Nenhuma defensoria vaga encontrada.</div>';
+      }
+
+      container.innerHTML = html;
+    }
+
+    // Função para controlar expansão/contração das entrâncias
+    function toggleEntrancia(titleElement) {
+      const content = titleElement.nextElementSibling;
+      const isCollapsed = titleElement.classList.contains('collapsed');
+      
+      // Animar a transição
+      if (isCollapsed) {
+        titleElement.classList.remove('collapsed');
+        content.style.display = 'block';
+        setTimeout(() => {
+          content.style.maxHeight = content.scrollHeight + 'px';
+          content.style.opacity = '1';
+        }, 10);
+      } else {
+        titleElement.classList.add('collapsed');
+        content.style.maxHeight = '0';
+        content.style.opacity = '0';
+        setTimeout(() => {
+          content.style.display = 'none';
+        }, 300); // Tempo da transição
+      }
+    }
+
+    // Função para formatar data
+    function formatDate(dateString) {
+      if (!dateString) return 'N/A';
+      const date = new Date(dateString);
+      return date.toLocaleDateString('pt-BR');
+    }
+
+    // Função para calcular dias de vacância
+    function calculateVacancyDays(dateString) {
+      if (!dateString) return 'N/A';
+      const vacancyDate = new Date(dateString);
+      const today = new Date();
+      const diffTime = Math.abs(today - vacancyDate);
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays;
+    }
+
+    // Função para calcular tempo em anos, meses e dias
+    function calculateVacancyTime(dateString) {
+      if (!dateString) return 'N/A';
+      
+      const vacancyDate = new Date(dateString);
+      const today = new Date();
+      
+      // Ajustar para evitar problemas de fuso horário
+      const startDate = new Date(vacancyDate.getFullYear(), vacancyDate.getMonth(), vacancyDate.getDate());
+      const endDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+      
+      let years = endDate.getFullYear() - startDate.getFullYear();
+      let months = endDate.getMonth() - startDate.getMonth();
+      let days = endDate.getDate() - startDate.getDate();
+      
+      // Ajustar se os dias são negativos
+      if (days < 0) {
+        months--;
+        const lastMonth = new Date(endDate.getFullYear(), endDate.getMonth(), 0);
+        days += lastMonth.getDate();
+      }
+      
+      // Ajustar se os meses são negativos
+      if (months < 0) {
+        years--;
+        months += 12;
+      }
+      
+      // Construir string de resultado
+      let result = '';
+      if (years > 0) {
+        result += `${years} ano${years > 1 ? 's' : ''}`;
+      }
+      if (months > 0) {
+        if (result) result += ', ';
+        result += `${months} ${months > 1 ? 'meses' : 'mês'}`;
+      }
+      if (days > 0) {
+        if (result) result += ', ';
+        result += `${days} dia${days > 1 ? 's' : ''}`;
+      }
+      
+      return result || '0 dias';
+    }
+
+    // Função para normalizar texto (remover acentos e converter para minúsculas)
+    function normalizeText(text) {
+      if (!text) return '';
+      return text.normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+                .toLowerCase()
+                .trim();
+    }
+
+    // Função para verificar se um texto contém um termo de busca (normalizado)
+    function textContains(text, searchTerm) {
+      return normalizeText(text).includes(normalizeText(searchTerm));
+    }
+
+    // Função de busca para ordem de vacância
+    function searchVacancyOrder() {
+      if (!vacancyOrderData || vacancyOrderData.length === 0) return;
+
+      const searchTerm = document.getElementById('vacancySearchInput').value;
+      const selectedFilter = document.querySelector('input[name="vacancyFilter"]:checked').value;
+
+      let filteredData = vacancyOrderData;
+
+      // Filtrar por entrância
+      if (selectedFilter !== 'todas') {
+        filteredData = vacancyOrderData.filter(entrancia => {
+          const entranciaNome = entrancia.entrancia.nome;
+          switch (selectedFilter) {
+            case '2instancia':
+              return textContains(entranciaNome, '2ª instância') || textContains(entranciaNome, 'segunda instância');
+            case 'especial':
+              return textContains(entranciaNome, 'especial');
+            case 'segunda':
+              return textContains(entranciaNome, 'segunda entrância');
+            case 'primeira':
+              return textContains(entranciaNome, 'primeira entrância');
+            default:
+              return true;
+          }
+        });
+      }
+
+      // Filtrar por termo de busca
+      if (searchTerm) {
+        filteredData = filteredData.map(entrancia => {
+          const filteredDefensorias = entrancia.defensorias.filter(defensoria => {
+            return textContains(defensoria.nome, searchTerm) ||
+                   textContains(defensoria.unidade_nome, searchTerm) ||
+                   (defensoria.substituto_nome && textContains(defensoria.substituto_nome, searchTerm));
+          });
+          return {
+            ...entrancia,
+            defensorias: filteredDefensorias
+          };
+        }).filter(entrancia => entrancia.defensorias.length > 0);
+      }
+
+      renderVacancyOrder(filteredData);
     }
   </script>
   <script src="script.js?v=1.1"></script>

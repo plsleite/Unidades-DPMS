@@ -8,3 +8,5 @@
 {"timestamp":"2025-09-11T03:12:56.851Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}
 {"timestamp":"2025-09-11T04:07:28.798Z","level":"DEBUG","message":"Test debug message"}
 {"timestamp":"2025-09-11T04:07:28.809Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}
+{"timestamp":"2025-09-11T04:11:34.504Z","level":"DEBUG","message":"Test debug message"}
+{"timestamp":"2025-09-11T04:11:34.514Z","level":"DEBUG","message":"Database Query","query":"SELECT * FROM test...","duration":"50ms","rows":10}

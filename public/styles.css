@@ -37,11 +37,54 @@ body {
   box-shadow: 0 2px 6px rgba(78, 155, 90, 0.3);
 }
 
+/* ===== Botões de Navegação ===== */
+.navigation-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.nav-btn {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 600;
+  border: 2px solid #4e9b5a;
+  border-radius: 25px;
+  background: #fff;
+  color: #4e9b5a;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+  min-width: 160px;
+}
+
+.nav-btn:hover {
+  background: #e8f5e8;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(78, 155, 90, 0.2);
+}
+
+.nav-btn.active {
+  background: linear-gradient(90deg, #4e9b5a, #3a7745);
+  color: white;
+  border-color: #3a7745;
+  box-shadow: 0 4px 12px rgba(78, 155, 90, 0.3);
+}
+
+.nav-btn.active:hover {
+  background: linear-gradient(90deg, #3a7745, #2d5a35);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(78, 155, 90, 0.4);
+}
+
 /* ===== Barra de busca ===== */
 .search-bar {
   display: flex;
   justify-content: center;
+  align-items: center;
   margin-bottom: 15px;
+  width: 100%;
 }
 
 .search-bar input {
@@ -55,6 +98,7 @@ body {
   background: #fff;
   box-shadow: 0 2px 6px rgba(0,0,0,0.08);
   transition: all 0.2s ease;
+  margin: 0 auto;
 }
 
 .search-bar input:focus {
@@ -69,6 +113,54 @@ body {
   gap: 12px;
   margin-bottom: 25px;
   font-size: 15px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+#vacancyFilters {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-bottom: 25px;
+  font-size: 15px;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Estilos específicos para labels dos filtros de vacância */
+#vacancyFilters label {
+  cursor: pointer;
+  user-select: none;
+  display: inline-flex;
+  align-items: center;
+  padding: 8px 16px !important;
+  background-color: #f5f5f5;
+  border: 2px solid #e0e0e0;
+  border-radius: 20px;
+  transition: all 0.3s ease;
+  font-weight: 500;
+  font-size: 15px;
+  height: 37px;
+  box-sizing: border-box;
+}
+
+#vacancyFilters label:hover {
+  background-color: #e8f5e8;
+  border-color: #4e9b5a;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(78, 155, 90, 0.15);
+}
+
+#vacancyFilters input {
+  display: none;
+}
+
+#vacancyFilters input:checked + label,
+#vacancyFilters label:has(input:checked) {
+  background-color: #4e9b5a;
+  border-color: #3a7745;
+  color: white;
+  box-shadow: 0 2px 8px rgba(78, 155, 90, 0.3);
 }
 
 .filters label {
@@ -82,6 +174,9 @@ body {
   border-radius: 20px;
   transition: all 0.3s ease;
   font-weight: 500;
+  font-size: 15px;
+  height: 37px;
+  box-sizing: border-box;
 }
 
 .filters label:hover {
@@ -115,7 +210,7 @@ body {
   user-select: none;
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 6px 16px;
   background-color: #f5f5f5;
   border: 2px solid #e0e0e0;
   border-radius: 20px;
@@ -165,7 +260,7 @@ body {
   user-select: none;
   display: inline-flex;
   align-items: center;
-  padding: 8px 16px;
+  padding: 6px 16px;
   background: linear-gradient(90deg, #6c757d, #5a6268);
   color: white;
   border: 2px solid #5a6268;
@@ -999,8 +1094,13 @@ body {
     font-size: 13px;
   }
   
+  .search-bar {
+    padding: 0 10px;
+  }
+  
   .search-bar input {
     max-width: 100%;
+    width: 100%;
   }
   
   .modal-content {
@@ -2059,4 +2159,378 @@ body {
   max-width: 60px !important;
   text-align: center !important;
   padding: 8px 4px !important;
+}
+
+/* ===== SEÇÃO DE ORDEM DE VACÂNCIA ===== */
+.vacancy-order-section {
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+  margin: 20px 0;
+  padding: 20px;
+  border: 1px solid #e9ecef;
+}
+
+.section-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin: 0 0 20px 0;
+  color: #2d5a35;
+  font-size: 1.5rem;
+  font-weight: 600;
+  border-bottom: 2px solid #4e9b5a;
+  padding-bottom: 10px;
+}
+
+.refresh-btn {
+  background: #4e9b5a;
+  color: white;
+  border: none;
+  padding: 8px 12px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-size: 14px;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.refresh-btn:hover {
+  background: #3a7745;
+  transform: translateY(-1px);
+  box-shadow: 0 2px 6px rgba(78, 155, 90, 0.3);
+}
+
+.refresh-btn:active {
+  transform: translateY(0);
+}
+
+.vacancy-order-container {
+  min-height: 100px;
+}
+
+.loading-message, .no-data-message, .error-message {
+  text-align: center;
+  padding: 40px 20px;
+  color: #666;
+  font-size: 16px;
+  font-style: italic;
+}
+
+.error-message {
+  color: #dc3545;
+  background: #f8d7da;
+  border: 1px solid #f5c6cb;
+  border-radius: 8px;
+  margin: 20px 0;
+}
+
+.retry-btn {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  margin-top: 10px;
+  font-size: 14px;
+  transition: all 0.3s ease;
+}
+
+.retry-btn:hover {
+  background: #c82333;
+  transform: translateY(-1px);
+}
+
+/* ===== GRUPOS DE ENTRÂNCIA ===== */
+.entrancia-group {
+  margin-bottom: 30px;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  overflow: hidden;
+  background: #f8f9fa;
+}
+
+.entrancia-title {
+  background: linear-gradient(90deg, #4e9b5a, #3a7745);
+  color: white;
+  margin: 0;
+  padding: 12px 16px;
+  font-size: 16px;
+  font-weight: bold;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  user-select: none;
+  transition: all 0.3s ease;
+}
+
+.entrancia-title:hover {
+  background: linear-gradient(90deg, #3a7745, #2d5a35);
+  transform: translateY(-1px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+}
+
+.entrancia-icon {
+  margin-right: 10px;
+  transition: transform 0.3s ease;
+  display: inline-block;
+  font-size: 12px;
+}
+
+.entrancia-title.collapsed .entrancia-icon {
+  transform: rotate(-90deg);
+}
+
+.entrancia-title > span:not(.entrancia-icon):not(.entrancia-count) {
+  flex: 1;
+  margin: 0 10px;
+}
+
+.entrancia-count {
+  margin-left: auto;
+}
+
+.entrancia-count {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 12px;
+  border-radius: 15px;
+  font-size: 0.8rem;
+  font-weight: 400;
+  text-transform: none;
+  opacity: 0.9;
+}
+
+.defensorias-list {
+  background: white;
+  padding: 0;
+  transition: max-height 0.3s ease, opacity 0.3s ease;
+  overflow: hidden;
+  opacity: 1;
+  max-height: none;
+}
+
+/* ===== ITENS DE DEFENSORIA ===== */
+.defensoria-item {
+  display: flex;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid #f0f0f0;
+  transition: all 0.3s ease;
+  background: white;
+  min-height: 80px;
+}
+
+.defensoria-item:last-child {
+  border-bottom: none;
+}
+
+.defensoria-item:hover {
+  background: #f8f9fa;
+  transform: translateX(5px);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.defensoria-order {
+  background: #dfe8df;
+  color: #2d5a35;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 14px;
+  margin-right: 15px;
+  flex-shrink: 0;
+}
+
+.defensoria-content {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.defensoria-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 5px;
+}
+
+.defensoria-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #2d5a35;
+}
+
+.defensoria-unidade {
+  font-size: 14px;
+  color: #666;
+}
+
+.defensoria-portaria {
+  font-size: 13px;
+  color: #888;
+  margin-top: 4px;
+}
+
+.vacancy-tags {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  margin-left: 20px;
+}
+
+.vacancy-date, .vacancy-days, .substituto {
+  font-size: 13px;
+  padding: 4px 8px;
+  border-radius: 12px;
+  font-weight: 500;
+}
+
+.no-data-message, .search-message {
+  text-align: center;
+  padding: 20px;
+  color: #666;
+  font-style: italic;
+  background: #f8f9fa;
+  border-radius: 8px;
+  margin: 10px 0;
+}
+
+@media (max-width: 768px) {
+  .defensoria-item {
+    padding: 15px;
+  }
+
+  .defensoria-content {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .defensoria-info {
+    align-items: flex-start;
+  }
+
+  .vacancy-tags {
+    align-items: flex-end;
+    margin-left: 0;
+  }
+}
+
+.vacancy-date {
+  background: #e3f2fd;
+  color: #1976d2;
+}
+
+.vacancy-days {
+  background: #fff3e0;
+  color: #f57c00;
+}
+
+.substituto {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+/* ===== RESPONSIVIDADE PARA ORDEM DE VACÂNCIA ===== */
+@media (max-width: 768px) {
+  .vacancy-order-section {
+    margin: 15px 0;
+    padding: 15px;
+  }
+  
+  .section-title {
+    font-size: 1.3rem;
+    flex-direction: column;
+    gap: 10px;
+    text-align: center;
+  }
+  
+  .entrancia-title {
+    font-size: 1.1rem;
+    flex-direction: column;
+    gap: 8px;
+    text-align: center;
+  }
+  
+  .defensoria-item {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 12px 15px;
+  }
+  
+  .defensoria-order {
+    align-self: flex-start;
+    width: 35px;
+    height: 35px;
+    font-size: 12px;
+    margin-right: 0;
+  }
+  
+  .defensoria-details {
+    justify-content: flex-end;
+    align-items: center;
+    align-self: center;
+  }
+  
+  .vacancy-tags {
+    align-items: flex-end;
+  }
+  
+  .vacancy-date, .vacancy-days, .substituto {
+    font-size: 12px;
+    padding: 3px 6px;
+  }
+}
+
+@media (max-width: 480px) {
+  .vacancy-order-section {
+    margin: 10px 0;
+    padding: 10px;
+  }
+  
+  .section-title {
+    font-size: 1.1rem;
+  }
+  
+  .entrancia-title {
+    font-size: 1rem;
+    padding: 12px 15px;
+  }
+  
+  .defensoria-item {
+    padding: 10px 12px;
+  }
+  
+  .defensoria-name {
+    font-size: 14px;
+  }
+  
+  .defensoria-unidade {
+    font-size: 13px;
+  }
+  
+  .defensoria-portaria {
+    font-size: 12px;
+  }
+  
+  .search-bar {
+    padding: 0 5px;
+  }
+  
+  .search-bar input {
+    padding: 10px 16px;
+    font-size: 14px;
+  }
 }

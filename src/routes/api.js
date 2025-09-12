@@ -1289,6 +1289,184 @@ router.get('/metrics', (req, res) => {
   });
 });
 
+// =========================
+// ENDPOINTS DE ORDEM DE VACÂNCIA
+// =========================
+
+// GET /api/vacancias/test - Teste do endpoint de vacâncias
+router.get('/vacancias/test', (req, res) => {
+  res.json({ 
+    message: 'Endpoint de vacâncias funcionando!',
+    timestamp: new Date().toISOString()
+  });
+});
+
+// GET /api/vacancias/ordem - Listar defensorias vagas por ordem de vacância por entrância
+router.get('/vacancias/ordem', async (req, res) => {
+  try {
+    // Primeiro, verificar se a tabela entrancias existe
+    const checkTableSql = `
+      SELECT EXISTS (
+        SELECT FROM information_schema.tables 
+        WHERE table_schema = 'public' 
+        AND table_name = 'entrancias'
+      );
+    `;
+    
+    const tableExists = await query(checkTableSql);
+    
+    if (!tableExists.rows[0].exists) {
+      return res.status(500).json({ 
+        error: 'Tabela entrancias não existe. Execute os scripts de migração primeiro.' 
+      });
+    }
+    
+    const sql = `
+      SELECT 
+        e.id as entrancia_id,
+        e.nome as entrancia_nome,
+        e.ordem as entrancia_ordem,
+        e.descricao as entrancia_descricao,
+        o.id as defensoria_id,
+        o.nome as defensoria_nome,
+        u.nome as unidade_nome,
+        o.data_vacancia,
+        o.portaria_vacancia,
+        o.substituto_nome,
+        o.substituto_email,
+        -- Calcular dias de vacância
+        CASE 
+          WHEN o.data_vacancia IS NOT NULL THEN 
+            (CURRENT_DATE - o.data_vacancia)
+          ELSE NULL
+        END as dias_vacancia
+      FROM entrancias e
+      LEFT JOIN unidades u ON e.id = u.entrancia_id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id AND o.vaga = true
+      WHERE o.id IS NOT NULL  -- Apenas defensorias vagas
+      ORDER BY 
+        e.ordem,  -- Ordem das entrâncias
+        o.data_vacancia ASC,  -- Dentro de cada entrância, ordenar por data de vacância (mais antiga primeiro)
+        u.nome,  -- Em caso de empate na data, ordenar por nome da unidade
+        o.nome   -- Em caso de empate na unidade, ordenar por nome da defensoria
+    `;
+    
+    const result = await query(sql);
+    
+    // Agrupar por entrância
+    const vacanciasPorEntrancia = {};
+    
+    result.rows.forEach(row => {
+      const entranciaId = row.entrancia_id;
+      
+      if (!vacanciasPorEntrancia[entranciaId]) {
+        vacanciasPorEntrancia[entranciaId] = {
+          entrancia: {
+            id: row.entrancia_id,
+            nome: row.entrancia_nome,
+            ordem: row.entrancia_ordem,
+            descricao: row.entrancia_descricao
+          },
+          defensorias: []
+        };
+      }
+      
+      vacanciasPorEntrancia[entranciaId].defensorias.push({
+        id: row.defensoria_id,
+        nome: row.defensoria_nome,
+        unidade_nome: row.unidade_nome,
+        data_vacancia: row.data_vacancia,
+        portaria_vacancia: row.portaria_vacancia,
+        substituto_nome: row.substituto_nome,
+        substituto_email: row.substituto_email,
+        dias_vacancia: row.dias_vacancia
+      });
+    });
+    
+    // Converter para array e ordenar por ordem da entrância
+    const resultado = Object.values(vacanciasPorEntrancia)
+      .sort((a, b) => a.entrancia.ordem - b.entrancia.ordem);
+    
+    res.json(resultado);
+    
+  } catch (error) {
+    console.error('Erro ao buscar ordem de vacância:', error);
+    res.status(500).json({ 
+      error: 'Erro interno do servidor',
+      details: error.message 
+    });
+  }
+});
+
+// GET /api/vacancias/ordem/:entranciaId - Listar defensorias vagas de uma entrância específica
+router.get('/vacancias/ordem/:entranciaId', async (req, res) => {
+  try {
+    const { entranciaId } = req.params;
+    
+    const sql = `
+      SELECT 
+        e.id as entrancia_id,
+        e.nome as entrancia_nome,
+        e.ordem as entrancia_ordem,
+        e.descricao as entrancia_descricao,
+        o.id as defensoria_id,
+        o.nome as defensoria_nome,
+        u.nome as unidade_nome,
+        o.data_vacancia,
+        o.portaria_vacancia,
+        o.substituto_nome,
+        o.substituto_email,
+        -- Calcular dias de vacância
+        CASE 
+          WHEN o.data_vacancia IS NOT NULL THEN 
+            (CURRENT_DATE - o.data_vacancia)
+          ELSE NULL
+        END as dias_vacancia
+      FROM entrancias e
+      LEFT JOIN unidades u ON e.id = u.entrancia_id
+      LEFT JOIN orgaos o ON u.id = o.unidade_id AND o.vaga = true
+      WHERE e.id = $1 AND o.id IS NOT NULL
+      ORDER BY 
+        o.data_vacancia ASC,
+        u.nome,
+        o.nome
+    `;
+    
+    const result = await query(sql, [entranciaId]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Entrância não encontrada ou não há defensorias vagas' });
+    }
+    
+    const entrancia = {
+      id: result.rows[0].entrancia_id,
+      nome: result.rows[0].entrancia_nome,
+      ordem: result.rows[0].entrancia_ordem,
+      descricao: result.rows[0].entrancia_descricao
+    };
+    
+    const defensorias = result.rows.map(row => ({
+      id: row.defensoria_id,
+      nome: row.defensoria_nome,
+      unidade_nome: row.unidade_nome,
+      data_vacancia: row.data_vacancia,
+      portaria_vacancia: row.portaria_vacancia,
+      substituto_nome: row.substituto_nome,
+      substituto_email: row.substituto_email,
+      dias_vacancia: row.dias_vacancia
+    }));
+    
+    res.json({
+      entrancia,
+      defensorias
+    });
+    
+  } catch (error) {
+    console.error('Erro ao buscar ordem de vacância por entrância:', error);
+    res.status(500).json({ error: 'Erro interno do servidor' });
+  }
+});
+
 // Função para formatar uptime
 function formatUptime(seconds) {
   const days = Math.floor(seconds / 86400);
